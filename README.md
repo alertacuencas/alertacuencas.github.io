@@ -1,5 +1,8 @@
 # Alerta Cuencas AMBA
 
+**Qué hace:** muestra en vivo cuánto sube el Río de la Plata y las cuencas del AMBA, con datos de Hidrografía Naval, el INA y el SMN.<br>
+**Cómo se prueba:** abrí <https://eroveda.github.io/alerta-cuencas-amba/>, o en tu máquina `uv sync && uv run pytest` (corre sin internet).
+
 **El Río de la Plata y las cuencas del AMBA, en vivo y en criollo.**
 
 Monitoreo cívico, abierto y sin fines de lucro para saber **cuánto está subiendo el agua**
