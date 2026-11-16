@@ -211,6 +211,62 @@ h2 {
 .pie-sitio { padding: 1.2rem clamp(1rem, 0.5rem + 3vw, 3rem); font-size: 0.78rem; color: var(--tinta-suave); border-top: 1px solid var(--linea); }
 .pie-sitio p { margin: 0.2rem 0; }
 
+/* ── Banda de aviso y Paraná ── */
+.banda {
+  display: block; padding: 0.7rem clamp(1rem, 0.5rem + 3vw, 3rem); background: var(--rojo); color: #fff;
+  font-weight: 600; text-decoration: none; line-height: 1.35;
+}
+.banda:hover, .banda:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+.banda:focus-visible { outline: 3px solid var(--tinta); outline-offset: -3px; }
+
+.parana {
+  display: grid; grid-template-columns: minmax(280px, 0.8fr) 1.4fr; gap: 2rem 3rem; align-items: start;
+  padding: clamp(1.5rem, 1rem + 3vw, 3.5rem) clamp(1rem, 0.5rem + 3vw, 3rem);
+  border-bottom: 1px solid var(--linea);
+}
+.parana-cabeza { position: sticky; top: 4.5rem; }
+#parana-cifra[data-signo="sube"] { color: var(--rojo); }
+.puertos-ley { display: flex; gap: 1.2rem; margin: 1rem 0 0; font-family: var(--mono); font-size: 0.72rem; color: var(--tinta-suave); }
+.ley-marca::before { content: ""; display: inline-block; width: 3px; height: 0.9rem; vertical-align: middle; margin-right: 0.4rem; }
+.ley-alerta::before { background: var(--amarillo); }
+.ley-evac::before { background: var(--rojo); }
+
+.puertos { list-style: none; margin: 0; padding: 0; }
+.puerto {
+  display: grid; align-items: center; gap: 0.2rem 0.9rem;
+  grid-template-columns: minmax(8rem, 11rem) 1fr 4.6rem 5.5rem 7rem;
+  padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--linea);
+  border-left: 4px solid transparent;
+}
+.puerto[data-nivel="alerta"] { border-left-color: var(--amarillo); }
+.puerto[data-nivel="evacuacion"] { border-left-color: var(--rojo); background: color-mix(in srgb, var(--rojo) 7%, transparent); }
+.puerto[data-viejo="true"] { opacity: 0.5; border-left-color: transparent; background: none; }
+.puerto-nombre { font-weight: 600; font-size: 0.92rem; }
+.puerto-barra { position: relative; height: 0.7rem; background: var(--superficie); border-radius: 2px; overflow: hidden; }
+.puerto-agua { position: absolute; inset: 0 auto 0 0; background: var(--agua); border-radius: 2px; }
+.puerto[data-nivel="evacuacion"] .puerto-agua { background: var(--rojo); }
+.puerto-marca { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
+.marca-alerta { background: var(--amarillo); }
+.marca-evac { background: var(--tinta); }
+.puerto-altura { font: 600 1rem var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.puerto-tendencia { font: 0.75rem var(--mono); color: var(--tinta-suave); }
+.puerto-tendencia[data-t="sube"] { color: var(--naranja); font-weight: 600; }
+.puerto-nivel { font: 600 0.7rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--tinta-suave); }
+.puerto[data-nivel="evacuacion"] .puerto-nivel { color: var(--rojo); }
+.puerto[data-nivel="alerta"] .puerto-nivel { color: color-mix(in srgb, var(--amarillo) 70%, var(--tinta)); }
+.puerto-hora { display: none; }
+
+@media (max-width: 980px) {
+  .parana { grid-template-columns: 1fr; }
+  .parana-cabeza { position: static; }
+}
+@media (max-width: 560px) {
+  .puerto { grid-template-columns: 1fr auto; }
+  .puerto-barra { grid-column: 1 / -1; grid-row: 2; }
+  .puerto-tendencia, .puerto-nivel { grid-row: 3; }
+  .puerto-nivel { text-align: right; }
+}
+
 @media (max-width: 980px) {
   .rio { grid-template-columns: 1fr; }
   .columnas, .sumate-grid { grid-template-columns: 1fr; gap: 1.8rem; }

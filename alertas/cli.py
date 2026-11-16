@@ -1,4 +1,5 @@
-"""Comandos: `zonas` (arma el GeoJSON de cuencas) y `poll` (consulta fuentes y arma estado.json).
+"""Comandos: `zonas` (arma el GeoJSON de cuencas) y `poll` (consulta fuentes y arma estado.json,
+serie.json y parana.json).
 
 Uso:
     python -m alertas.cli zonas
@@ -15,7 +16,7 @@ from pathlib import Path
 
 from alertas.db import Base
 from alertas.estado import armar_estado
-from alertas.fuentes import ina, registro, smn_cap
+from alertas.fuentes import ina, prefectura, registro, smn_cap
 from alertas.modelos import Lectura
 from alertas.serie import HORAS_ATRAS, armar_serie
 from alertas.tiempo import ahora_utc
@@ -88,6 +89,7 @@ def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime) -> dict:
     fuentes: dict[str, dict] = {}
     db.guardar_lecturas(_lecturas(ahora, fuentes))
     puntos = _consultar("ina", fuentes, ina.obtener) or []
+    puertos = _consultar("prefectura", fuentes, lambda: prefectura.obtener(ahora))
     alertas = smn_cap.vigentes(_caps(db, fuentes, ahora), ahora)
     db.podar(ahora)
 
@@ -96,6 +98,8 @@ def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime) -> dict:
                           ina.resumen(puntos, ahora), fuentes, ahora)
     serie = armar_serie(db.lecturas_desde(ahora - timedelta(hours=HORAS_ATRAS)), puntos, ahora)
     _escribir_json(salida.with_name("serie.json"), serie, indent=None)
+    if puertos is not None:  # si Prefectura no responde queda el último parana.json publicado
+        _escribir_json(salida.with_name("parana.json"), prefectura.resumen(puertos, ahora), indent=1)
     _escribir_json(salida, estado, indent=1)
     return estado
 

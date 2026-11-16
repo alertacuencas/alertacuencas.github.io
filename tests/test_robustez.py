@@ -7,7 +7,7 @@ import pytest
 
 from alertas import cli, http
 from alertas.db import Base
-from alertas.fuentes import ina, metar, shn, smn_cap, snih
+from alertas.fuentes import ina, metar, prefectura, shn, smn_cap, snih
 from alertas.modelos import Lectura
 from alertas.tiempo import a_utc, local_a_utc
 
@@ -100,6 +100,7 @@ def _preparar(tmp_path, monkeypatch, fixture_text, shn_fn, cap_xml):
     monkeypatch.setattr(snih, "obtener", lambda e: [])
     monkeypatch.setattr(ina, "obtener", lambda: [])
     monkeypatch.setattr(metar, "obtener", lambda: [])
+    monkeypatch.setattr(prefectura, "obtener", lambda a: [])
     monkeypatch.setattr(smn_cap, "obtener_links", lambda: ["https://ssl.smn.gob.ar/feeds/CAP/a.xml"])
     monkeypatch.setattr(smn_cap, "obtener_cap", lambda link: cap_xml)
     zonas = tmp_path / "zonas.geojson"

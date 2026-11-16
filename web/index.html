@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Alerta Cuencas AMBA</title>
-  <meta name="description" content="Monitoreo cívico y abierto del Río de la Plata y las cuencas del AMBA: sudestada en vivo, pronóstico del INA y alertas del SMN en un solo lugar.">
+  <meta name="description" content="Monitoreo cívico y abierto del Río de la Plata, el río Paraná y las cuencas del AMBA: sudestada en vivo, el Paraná puerto por puerto, pronóstico del INA y alertas del SMN en un solo lugar.">
   <meta property="og:title" content="Alerta Cuencas AMBA · el río en vivo">
   <meta property="og:description" content="Cuánto está el Río de la Plata por encima de la marea, ahora y en las próximas 48 h. Datos públicos de SHN, INA y SMN en un solo lugar.">
   <meta property="og:type" content="website">
@@ -27,11 +27,14 @@
     </div>
     <nav class="nav" aria-label="Secciones">
       <a href="#rio">El río</a>
+      <a href="#parana">Paraná</a>
       <a href="#tablero">Tablero</a>
       <a href="#porque">Por qué</a>
       <a href="#sumate" class="nav-cta">Sumate</a>
     </nav>
   </header>
+
+  <a class="banda" id="banda" href="#parana" hidden></a>
 
   <main>
     <section id="rio" class="rio" aria-labelledby="t-rio-ahora">
@@ -55,6 +58,20 @@
           <span class="ley ley-prono">pronóstico INA (banda: percentiles 5–95 del modelo)</span>
         </figcaption>
       </figure>
+    </section>
+
+    <section id="parana" class="parana" aria-labelledby="t-parana" hidden>
+      <div class="parana-cabeza">
+        <p class="sobretitulo" id="t-parana">El río Paraná · puerto por puerto</p>
+        <p class="rio-cifra"><span id="parana-cifra">—</span><small id="parana-cifra-txt">puertos en evacuación</small></p>
+        <p class="rio-frase" id="parana-frase">Cargando las alturas de Prefectura Naval…</p>
+        <p class="nota">Escalas de Prefectura Naval, que se leen cada 2 a 12 horas según el puerto. Los niveles de alerta y
+          evacuación son los que fija Prefectura para cada puerto. Ante una evacuación, seguí a Defensa Civil de tu municipio.</p>
+        <p class="puertos-ley" aria-hidden="true">
+          <span class="ley-marca ley-alerta">alerta</span><span class="ley-marca ley-evac">evacuación</span>
+        </p>
+      </div>
+      <ol class="puertos" id="puertos" aria-label="Puertos del Paraná, de norte a sur"></ol>
     </section>
 
     <section id="tablero" class="tablero" aria-label="Tablero de cuencas">
@@ -148,7 +165,7 @@
 
   <footer class="pie-sitio">
     <p>No es un sistema oficial. Ante emergencias seguí al SMN, a Hidrografía Naval y a Defensa Civil (103).</p>
-    <p>Datos: Servicio de Hidrografía Naval · Instituto Nacional del Agua · Servicio Meteorológico Nacional · SNIH · NOAA AWC.</p>
+    <p>Datos: Servicio de Hidrografía Naval · Prefectura Naval Argentina · Instituto Nacional del Agua · Servicio Meteorológico Nacional · SNIH · NOAA AWC.</p>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

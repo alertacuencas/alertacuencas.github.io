@@ -39,3 +39,14 @@ Lo genera `alertas/serie.py` (`armar_serie`) en cada poll y lo dibuja `web/grafi
 | `generado` | fecha | Momento del poll |
 | `estaciones` | objeto `código SHN → {altura, astronomica, residuo}` | Cada una es una lista `[ts, valor]` ordenada; últimas 72 h y, para la marea astronómica, hasta +48 h |
 | `pronostico_sfer` | lista `[ts, main, p05, p95]` | Pronóstico INA de San Fernando desde ahora hasta +48 h (`p05`/`p95` pueden ser `null`) |
+
+## `parana.json` (versión 1)
+
+Lo arma `alertas/fuentes/prefectura.py` en cada poll. Si Prefectura no responde no se
+reescribe, y la web sigue mostrando el último publicado (cada puerto trae su hora).
+
+| Campo | Qué es |
+|---|---|
+| `version`, `generado`, `fuente`, `url` | Metadatos |
+| `evacuacion`, `alerta` | Nombres de los puertos con lectura reciente (menos de 36 h) en cada nivel, de norte a sur |
+| `puertos[]` | `puerto`, `rio`, `altura`, `variacion`, `ts` (UTC), `alerta`, `evacuacion`, `nivel` (`evacuacion` · `alerta` · `normal`), `tendencia` (`sube` · `baja` · `estable` · `sin_dato`), `viejo` |

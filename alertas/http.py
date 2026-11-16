@@ -12,6 +12,7 @@ HOSTS_PERMITIDOS = frozenset({
     "snih.hidricosargentina.gob.ar",
     "alerta.ina.gob.ar",
     "aviationweather.gov",
+    "contenidosweb.prefecturanaval.gob.ar",
 })
 
 

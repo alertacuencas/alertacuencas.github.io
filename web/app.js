@@ -265,9 +265,78 @@ async function refrescarRio() {
   }
 }
 
+// ── El Paraná, puerto por puerto (Prefectura Naval) ──
+const VERSION_PARANA = 1;
+const NIVEL_TXT = { evacuacion: "evacuación", alerta: "alerta", normal: "normal" };
+const FLECHA = { sube: "▲ sube", baja: "▼ baja", estable: "= estable", sin_dato: "" };
+
+function enumerar(nombres, max = 4) {
+  if (nombres.length <= max) return nombres.length > 1
+    ? `${nombres.slice(0, -1).join(", ")} y ${nombres.at(-1)}` : nombres[0] ?? "";
+  return `${nombres.slice(0, max).join(", ")} y ${nombres.length - max} puertos más`;
+}
+
+function filaPuerto(p) {
+  // La barra llega hasta 1,2 veces el nivel de evacuación; las marcas muestran alerta y evacuación.
+  const tope = p.evacuacion * 1.2;
+  const pct = (v) => `${Math.max(0, Math.min(100, (v / tope) * 100)).toFixed(1)}%`;
+  const tendencia = FLECHA[p.tendencia] ?? "";
+  return el("li", { className: "puerto", dataset: { nivel: p.nivel, viejo: String(p.viejo) } },
+    el("span", { className: "puerto-nombre", textContent: p.puerto }),
+    el("span", { className: "puerto-barra", role: "img",
+      ariaLabel: `${metros(p.altura)}; alerta ${metros(p.alerta)}, evacuación ${metros(p.evacuacion)}` },
+      el("span", { className: "puerto-agua", style: { width: pct(p.altura) } }),
+      el("span", { className: "puerto-marca marca-alerta", style: { left: pct(p.alerta) } }),
+      el("span", { className: "puerto-marca marca-evac", style: { left: pct(p.evacuacion) } })),
+    el("span", { className: "puerto-altura", textContent: metros(p.altura) }),
+    el("span", { className: "puerto-tendencia", dataset: { t: p.tendencia }, textContent: tendencia }),
+    el("span", { className: "puerto-nivel", textContent: p.viejo ? "sin dato reciente" : NIVEL_TXT[p.nivel] }),
+    el("span", { className: "puerto-hora", textContent: hora(p.ts) }),
+  );
+}
+
+function pintarParana(d) {
+  const seccion = document.getElementById("parana");
+  const banda = document.getElementById("banda");
+  seccion.hidden = false;
+  const evac = d.evacuacion, alerta = d.alerta;
+  document.getElementById("parana-cifra").textContent = String(evac.length);
+  document.getElementById("parana-cifra").dataset.signo = evac.length ? "sube" : "";
+  document.getElementById("parana-cifra-txt").textContent =
+    evac.length === 1 ? "puerto en evacuación" : "puertos en evacuación";
+  const partes = [];
+  if (evac.length) partes.push(`${enumerar(evac, 12)} ${evac.length === 1 ? "supera" : "superan"} el nivel de evacuación de Prefectura.`);
+  if (alerta.length) partes.push(`${enumerar(alerta)} ${alerta.length === 1 ? "está" : "están"} en alerta.`);
+  if (!partes.length) partes.push("Ningún puerto del Paraná está en alerta ni en evacuación.");
+  document.getElementById("parana-frase").textContent = partes.join(" ");
+  document.getElementById("puertos").replaceChildren(...d.puertos.map(filaPuerto));
+
+  if (evac.length) {
+    // Los puertos vienen de norte a sur: se nombra el tramo para no dejar afuera a ninguna ciudad.
+    const tramo = evac.length === 1 ? `en ${evac[0]}`
+      : `en ${evac.length} puertos, de ${evac[0]} a ${evac.at(-1)}`;
+    banda.textContent = `El Paraná está en nivel de evacuación ${tramo}. Seguí a Defensa Civil de tu municipio →`;
+    banda.hidden = false;
+  } else {
+    banda.hidden = true;
+  }
+}
+
+async function refrescarParana() {
+  try {
+    const d = await cargarJSON("data/parana.json");
+    if (d.version !== VERSION_PARANA) throw new Error(`versión ${d.version}`);
+    pintarParana(d);
+  } catch (err) {
+    // Sin parana.json (primera corrida o Prefectura caída) la sección queda oculta.
+    console.warn("Paraná:", err.message);
+  }
+}
+
 let geoZonas = null;
 async function refrescar() {
   refrescarRio();
+  refrescarParana();
   try {
     geoZonas ??= await cargarJSON("data/zonas.geojson");
     const estado = await cargarJSON("data/estado.json");

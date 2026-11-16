@@ -5,7 +5,7 @@ from shapely.geometry import box, mapping
 
 from alertas import cli
 from alertas.db import Base
-from alertas.fuentes import ina, metar, shn, smn_cap, snih
+from alertas.fuentes import ina, metar, prefectura, shn, smn_cap, snih
 
 
 def _zonas_fc():
@@ -27,6 +27,8 @@ def test_poll_junta_fuentes_y_aisla_errores(tmp_path, fixture_text, monkeypatch)
     monkeypatch.setattr(metar, "obtener", lambda: [])
     monkeypatch.setattr(smn_cap, "obtener_links", lambda: ["https://ssl.smn.gob.ar/feeds/CAP/x.xml"])
     monkeypatch.setattr(smn_cap, "obtener_cap", lambda link: fixture_text("cap_amba_sintetico.xml"))
+    monkeypatch.setattr(prefectura, "obtener",
+                        lambda a: prefectura.parse(fixture_text("pna_alturas_16nov.html"), a))
 
     zonas_path = tmp_path / "zonas.geojson"
     zonas_path.write_text(json.dumps(_zonas_fc()))
@@ -44,6 +46,9 @@ def test_poll_junta_fuentes_y_aisla_errores(tmp_path, fixture_text, monkeypatch)
     assert estado["fuentes"]["smn_cap"]["ok"] is True
     assert estado["zonas"]["medrano"]["nivel_smn"] == "naranja"
     assert estado["pronostico_san_fernando"]["max_main"] > 0
+    parana = json.loads((tmp_path / "parana.json").read_text())
+    assert estado["fuentes"]["prefectura"]["ok"] is True
+    assert parana["puertos"], "parana.json debe traer los puertos del Paraná"
     # el CAP ya visto no se vuelve a descargar
     assert db.links_cap_nuevos(["https://ssl.smn.gob.ar/feeds/CAP/x.xml"]) == []
 
@@ -56,6 +61,11 @@ def test_poll_cap_malformado_no_rompe(tmp_path, fixture_text, monkeypatch):
     monkeypatch.setattr(metar, "obtener", lambda: [])
     monkeypatch.setattr(smn_cap, "obtener_links", lambda: ["https://ssl.smn.gob.ar/feeds/CAP/malo.xml"])
     monkeypatch.setattr(smn_cap, "obtener_cap", lambda link: "<no-es-cap")
+
+    def prefectura_caida(ahora):
+        raise TimeoutError("Prefectura no responde")
+
+    monkeypatch.setattr(prefectura, "obtener", prefectura_caida)
     zonas_path = tmp_path / "zonas.geojson"
     zonas_path.write_text(json.dumps(_zonas_fc()))
     salida = tmp_path / "estado.json"
@@ -65,3 +75,5 @@ def test_poll_cap_malformado_no_rompe(tmp_path, fixture_text, monkeypatch):
     estado = json.loads(salida.read_text())
     assert estado["zonas"]["medrano"]["nivel_smn"] == "verde"
     assert estado["fuentes"]["smn_cap"]["caps_invalidos"] == 1
+    assert estado["fuentes"]["prefectura"]["ok"] is False
+    assert not (tmp_path / "parana.json").exists(), "sin datos nuevos no se pisa el último parana.json"

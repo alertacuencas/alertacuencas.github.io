@@ -1,6 +1,6 @@
 # Alerta Cuencas AMBA
 
-**Qué hace:** muestra en vivo cuánto sube el Río de la Plata y las cuencas del AMBA, con datos de Hidrografía Naval, el INA y el SMN.<br>
+**Qué hace:** muestra en vivo cuánto sube el Río de la Plata, el Paraná (puerto por puerto, de Misiones al Delta) y las cuencas del AMBA, con datos de Hidrografía Naval, Prefectura, el INA y el SMN.<br>
 **Cómo se prueba:** abrí <https://eroveda.github.io/alerta-cuencas-amba/>, o en tu máquina `uv sync && uv run pytest` (corre sin internet).
 
 **El Río de la Plata y las cuencas del AMBA, en vivo y en criollo.**
@@ -36,6 +36,9 @@ hacerlo llegar a tiempo.
 
 - **Sudestada en vivo:** cuánto está el río por encima de la marea astronómica en San
   Fernando, Buenos Aires y La Plata, con un gráfico de 72 h y el pronóstico del INA a 48 h.
+- **El Paraná, puerto por puerto:** la altura de cada escala de Prefectura Naval, de Misiones
+  al Delta, comparada con sus niveles de alerta y evacuación. Si algún puerto pasa el nivel de
+  evacuación, aparece una banda roja arriba de todo.
 - **Tablero por cuenca:** alertas oficiales del SMN cruzadas con cada cuenca, el arroyo
   Medrano y la lluvia observada en 6 aeropuertos.
 - **Funciona solo, 24/7 y gratis:** GitHub Actions consulta las fuentes cada 10 minutos y
