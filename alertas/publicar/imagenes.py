@@ -24,7 +24,7 @@ COLOR = {"evacuacion": "#b3261e", "alerta": "#e0a526", "normal": "#3f6b3a", "sin
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
          "septiembre", "octubre", "noviembre", "diciembre"]
-URL = "alertacuencas.github.io/alerta-cuencas-amba"
+URL = "alertacuencas.github.io"
 CUENTA = "@alertacuencas"
 
 
