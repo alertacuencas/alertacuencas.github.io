@@ -214,6 +214,9 @@ a { color: inherit; }
 .avisar h2 { margin: 0 0 1rem; font-size: clamp(1.8rem, 1rem + 3vw, 3.2rem); font-weight: 800; font-stretch: 85%; letter-spacing: -0.02em; line-height: 1.05; }
 .avisar p { max-width: 54ch; font-size: 1.1rem; line-height: 1.55; margin: 0 0 1.6rem; color: color-mix(in srgb, var(--cartel-texto) 85%, transparent); }
 .boton-claro { display: inline-block; padding: 0.8rem 1.3rem; border-radius: 999px; background: var(--cartel-texto); color: var(--cartel); font-weight: 800; text-decoration: none; transition: transform 200ms var(--ease); }
+.avisar-botones { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.boton-borde { display: inline-block; padding: 0.8rem 1.3rem; border-radius: 999px; border: 2px solid var(--cartel-texto); color: var(--cartel-texto); font-weight: 800; text-decoration: none; transition: background-color 200ms var(--ease); }
+.boton-borde:hover, .boton-borde:focus-visible { background: color-mix(in srgb, var(--cartel-texto) 14%, transparent); outline: 3px solid var(--ocre); outline-offset: 3px; }
 .boton-claro:hover, .boton-claro:focus-visible { transform: translateY(-2px); outline: 3px solid var(--ocre); outline-offset: 3px; }
 
 /* ── Detalle técnico ── */

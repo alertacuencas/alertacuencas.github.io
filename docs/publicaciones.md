@@ -1,6 +1,7 @@
 # Publicaciones para redes
 
-En cada poll, `alertas/publicar/` arma una publicación para Instagram con el estado del día:
+En cada poll, `alertas/publicar/` arma una publicación para Instagram
+([@alertacuencas](https://www.instagram.com/alertacuencas/)) con el estado del día:
 un carrusel de 3 imágenes de 1080×1350 (portada, puertos del Paraná más afectados, costa y
 tormentas) y el texto. Se revisa en `/publicaciones.html`.
 

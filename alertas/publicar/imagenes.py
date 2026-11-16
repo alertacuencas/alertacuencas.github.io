@@ -25,6 +25,7 @@ DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "doming
 MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto",
          "septiembre", "octubre", "noviembre", "diciembre"]
 URL = "eroveda.github.io/alerta-cuencas-amba"
+CUENTA = "@alertacuencas"
 
 
 def _archivo(tam: int, peso: int = 800, ancho: int = 85) -> ImageFont.FreeTypeFont:
@@ -74,7 +75,7 @@ def _marco(numero: int, total: int, ahora: datetime) -> tuple[Image.Image, Image
         d.rectangle([MARGEN, 30 + i * 8, MARGEN + 14, 33 + i * 8], fill=CARTEL_TEXTO)
     d.rectangle([MARGEN, 66, MARGEN + 14, 82], fill=LEON)
     d.text((MARGEN + 34, 32), "ALERTA CUENCAS", font=_archivo(40, 800, 80), fill=CARTEL_TEXTO)
-    d.text((ANCHO - MARGEN, 42), f"{numero}/{total}", font=_mono(26), fill=CARTEL_TEXTO, anchor="ra")
+    d.text((ANCHO - MARGEN, 42), f"{CUENTA}  {numero}/{total}", font=_mono(26), fill=CARTEL_TEXTO, anchor="ra")
     d.line([MARGEN, ALTO - 140, ANCHO - MARGEN, ALTO - 140], fill=LINEA, width=2)
     d.text((MARGEN, ALTO - 118), "No es un sistema oficial. Emergencias: Defensa Civil (103).",
            font=_archivo(28, 600, 100), fill=CARBON_SUAVE)
