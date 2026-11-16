@@ -93,3 +93,83 @@ def test_parse_fecha_hora_argentina():
 def test_html_vacio_o_basura():
     assert prefectura.parse("", AHORA) == []
     assert prefectura.parse("<tr><td>sin etiquetas</td></tr><<<", AHORA) == []
+
+
+# ── Respaldo vía INA (Prefectura no responde desde GitHub Actions) ──
+
+def test_series_ina_un_puerto_por_nombre_de_norte_a_sur(fixture_text):
+    series = prefectura.parse_series_ina(fixture_text("ina_series_alturas_prefe.json"))
+    nombres = [s.puerto for s in series]
+
+    assert len(nombres) == len(set(nombres)), "el INA repite puertos en series sin datos"
+    assert nombres.index("Corrientes") < nombres.index("Santa Fe") < nombres.index("Rosario") < nombres.index("Zárate")
+    santa_fe = next(s for s in series if s.puerto == "Santa Fe")
+    assert (santa_fe.id, santa_fe.alerta, santa_fe.evacuacion) == (30, 5.3, 5.7)
+    assert {s.rio for s in series} <= prefectura.RIOS_INA  # ni el Uruguay ni Yacyretá sin umbral
+
+
+def test_puerto_ina_desde_observaciones_reales(fixture_text):
+    serie = next(s for s in prefectura.parse_series_ina(fixture_text("ina_series_alturas_prefe.json"))
+                 if s.puerto == "Santa Fe")
+    obs = prefectura.parse_obs_ina(fixture_text("ina_obs_santa_fe.json"))
+
+    p = prefectura.puerto_ina(serie, obs, AHORA)
+
+    assert (p.altura, p.variacion, p.tendencia, p.nivel) == (5.77, 0.0, "estable", "evacuacion")
+    assert p.ts == "2026-11-16T03:00:00Z"
+    assert p.viejo is False
+
+
+def test_puerto_ina_sin_observaciones_o_con_basura():
+    serie = prefectura.SerieIna(1, "X", "PARANAINF", -31.0, 5.0, 5.5)
+    assert prefectura.puerto_ina(serie, [], AHORA) is None
+    basura = '[{"timestart": "no-es-fecha", "valor": 1}, {"timestart": "2026-11-16T03:00:00Z", "valor": null},' \
+             ' {"timestart": "2026-11-16T03:00:00Z", "valor": 999}]'
+    assert prefectura.parse_obs_ina(basura) == []
+
+
+def test_series_ina_ignora_filas_incompletas():
+    texto = '{"rows": [{"id": 1, "estacion": {"rio": "PARANAINF", "nivel_alerta": null}}, {"id": 2}]}'
+    assert prefectura.parse_series_ina(texto) == []
+
+
+def test_respaldo_usa_el_ina_si_prefectura_no_responde(monkeypatch, fixture_text):
+    def caida(ahora):
+        raise TimeoutError("timed out")
+
+    respuestas = {prefectura.INA_SERIES: fixture_text("ina_series_alturas_prefe.json")}
+    monkeypatch.setattr(prefectura, "obtener", caida)
+    monkeypatch.setattr(prefectura, "pedir",
+                        lambda url: respuestas.get(url) or fixture_text("ina_obs_santa_fe.json"))
+
+    puertos, via = prefectura.obtener_con_respaldo(AHORA)
+
+    assert via == "ina"
+    assert "Santa Fe" in {p.puerto for p in puertos}
+    r = prefectura.resumen(puertos, AHORA, via)
+    assert r["via"] == "ina" and "INA" in r["fuente"]
+
+
+def test_respaldo_prefiere_prefectura(monkeypatch, fixture_text):
+    monkeypatch.setattr(prefectura, "obtener", lambda a: prefectura.parse(fixture_text("pna_alturas_16nov.html"), a))
+    puertos, via = prefectura.obtener_con_respaldo(AHORA)
+    assert via == "prefectura" and puertos
+
+
+def test_ina_sin_alturas_es_un_error(monkeypatch):
+    monkeypatch.setattr(prefectura, "pedir", lambda url: '{"rows": []}')
+    with pytest.raises(RuntimeError):
+        prefectura.obtener_ina(AHORA)
+
+
+def test_ina_un_puerto_caido_no_frena_a_los_demas(monkeypatch, fixture_text):
+    def pedir(url):
+        if url == prefectura.INA_SERIES:
+            return fixture_text("ina_series_alturas_prefe.json")
+        if "/series/30/" in url:
+            raise TimeoutError("Santa Fe no responde")
+        return fixture_text("ina_obs_santa_fe.json")
+
+    monkeypatch.setattr(prefectura, "pedir", pedir)
+    nombres = {p.puerto for p in prefectura.obtener_ina(AHORA)}
+    assert "Santa Fe" not in nombres and "Rosario" in nombres

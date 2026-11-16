@@ -89,7 +89,9 @@ def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime) -> dict:
     fuentes: dict[str, dict] = {}
     db.guardar_lecturas(_lecturas(ahora, fuentes))
     puntos = _consultar("ina", fuentes, ina.obtener) or []
-    puertos = _consultar("prefectura", fuentes, lambda: prefectura.obtener(ahora))
+    parana = _consultar("prefectura", fuentes, lambda: prefectura.obtener_con_respaldo(ahora))
+    if parana is not None:
+        fuentes["prefectura"]["via"] = parana[1]
     alertas = smn_cap.vigentes(_caps(db, fuentes, ahora), ahora)
     db.podar(ahora)
 
@@ -98,8 +100,9 @@ def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime) -> dict:
                           ina.resumen(puntos, ahora), fuentes, ahora)
     serie = armar_serie(db.lecturas_desde(ahora - timedelta(hours=HORAS_ATRAS)), puntos, ahora)
     _escribir_json(salida.with_name("serie.json"), serie, indent=None)
-    if puertos is not None:  # si Prefectura no responde queda el último parana.json publicado
-        _escribir_json(salida.with_name("parana.json"), prefectura.resumen(puertos, ahora), indent=1)
+    if parana is not None:  # si no responde ninguna fuente queda el último parana.json publicado
+        puertos, via = parana
+        _escribir_json(salida.with_name("parana.json"), prefectura.resumen(puertos, ahora, via), indent=1)
     _escribir_json(salida, estado, indent=1)
     return estado
 

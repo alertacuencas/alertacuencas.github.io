@@ -100,7 +100,7 @@ def _preparar(tmp_path, monkeypatch, fixture_text, shn_fn, cap_xml):
     monkeypatch.setattr(snih, "obtener", lambda e: [])
     monkeypatch.setattr(ina, "obtener", lambda: [])
     monkeypatch.setattr(metar, "obtener", lambda: [])
-    monkeypatch.setattr(prefectura, "obtener", lambda a: [])
+    monkeypatch.setattr(prefectura, "obtener_con_respaldo", lambda a: ([], "prefectura"))
     monkeypatch.setattr(smn_cap, "obtener_links", lambda: ["https://ssl.smn.gob.ar/feeds/CAP/a.xml"])
     monkeypatch.setattr(smn_cap, "obtener_cap", lambda link: cap_xml)
     zonas = tmp_path / "zonas.geojson"

@@ -310,6 +310,10 @@ function pintarParana(d) {
   if (!partes.length) partes.push("Ningún puerto del Paraná está en alerta ni en evacuación.");
   document.getElementById("parana-frase").textContent = partes.join(" ");
   document.getElementById("puertos").replaceChildren(...d.puertos.map(filaPuerto));
+  const ultima = d.puertos.map((p) => p.ts).sort().at(-1);
+  document.getElementById("parana-fuente").textContent = d.via === "ina"
+    ? `Escalas de Prefectura Naval publicadas por el INA: una lectura por día, la de las 00 h (última: ${hora(ultima)}).`
+    : `Escalas de Prefectura Naval, que se leen cada 2 a 12 horas según el puerto (última: ${hora(ultima)}).`;
 
   if (evac.length) {
     // Los puertos vienen de norte a sur: se nombra el tramo para no dejar afuera a ninguna ciudad.

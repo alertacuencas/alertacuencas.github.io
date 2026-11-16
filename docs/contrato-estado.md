@@ -42,7 +42,8 @@ Lo genera `alertas/serie.py` (`armar_serie`) en cada poll y lo dibuja `web/grafi
 
 ## `parana.json` (versión 1)
 
-Lo arma `alertas/fuentes/prefectura.py` en cada poll. Si Prefectura no responde no se
+Lo arma `alertas/fuentes/prefectura.py` en cada poll: Prefectura directo y, si no responde (pasa siempre
+desde GitHub Actions), las mismas escalas vía INA, con una lectura diaria (`via`: `prefectura` · `ina`). Si no responde ninguna no se
 reescribe, y la web sigue mostrando el último publicado (cada puerto trae su hora).
 
 | Campo | Qué es |

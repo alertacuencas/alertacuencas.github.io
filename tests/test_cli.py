@@ -49,6 +49,7 @@ def test_poll_junta_fuentes_y_aisla_errores(tmp_path, fixture_text, monkeypatch)
     parana = json.loads((tmp_path / "parana.json").read_text())
     assert estado["fuentes"]["prefectura"]["ok"] is True
     assert parana["puertos"], "parana.json debe traer los puertos del Paraná"
+    assert parana["via"] == "prefectura" and estado["fuentes"]["prefectura"]["via"] == "prefectura"
     # el CAP ya visto no se vuelve a descargar
     assert db.links_cap_nuevos(["https://ssl.smn.gob.ar/feeds/CAP/x.xml"]) == []
 
@@ -66,6 +67,7 @@ def test_poll_cap_malformado_no_rompe(tmp_path, fixture_text, monkeypatch):
         raise TimeoutError("Prefectura no responde")
 
     monkeypatch.setattr(prefectura, "obtener", prefectura_caida)
+    monkeypatch.setattr(prefectura, "obtener_ina", prefectura_caida)
     zonas_path = tmp_path / "zonas.geojson"
     zonas_path.write_text(json.dumps(_zonas_fc()))
     salida = tmp_path / "estado.json"
