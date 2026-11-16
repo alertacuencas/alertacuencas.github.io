@@ -15,6 +15,7 @@ lectura por día, la de las 00 h.
 """
 
 import json
+import unicodedata
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
 from html.parser import HTMLParser
@@ -33,6 +34,16 @@ INA_OBS = "https://alerta.ina.gob.ar/a5/obs/puntual/series/{id}/observaciones?ti
 # Códigos de río del INA para el Paraná y sus brazos del Delta.
 RIOS_INA = frozenset({"PARANAMED", "PARANAINF", "SANJAVIER", "PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY"})
 INA_DIAS_ATRAS = 3
+# Orden de la tabla de Prefectura, aguas abajo. En Misiones y Corrientes el río corre de
+# este a oeste, así que ordenar por latitud mezclaría los puertos.
+ORDEN_RIO = (
+    "PUERTO IGUAZU", "LIBERTAD", "EL DORADO", "LIBERTADOR", "PUERTO MANI", "SANTA ANA", "POSADAS",
+    "ITUZAINGO", "ITA IBATE", "ITATI", "PASO DE LA PATRIA", "CORRIENTES", "BARRANQUERAS", "EMPEDRADO",
+    "BELLA VISTA", "GOYA", "RECONQUISTA", "ESQUINA", "SAN JAVIER (SANTA FE)", "LA PAZ", "SANTA ELENA",
+    "HERNANDARIAS", "PARANA", "SANTA FE", "DIAMANTE", "VICTORIA", "SAN LORENZO (SAN MARTIN)", "ROSARIO",
+    "VILLA CONSTITUCION", "SAN NICOLAS", "RAMALLO", "SAN PEDRO", "BARADERO", "IBICUY", "GUAZUCITO",
+    "ZARATE", "CAMPANA", "ESCOBAR",
+)
 UMBRAL_ESTABLE_M = 0.02
 MESES = {"ENE": 1, "FEB": 2, "MAR": 3, "ABR": 4, "MAY": 5, "JUN": 6,
          "JUL": 7, "AGO": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DIC": 12}
@@ -190,7 +201,17 @@ def parse_series_ina(texto: str) -> list[SerieIna]:
         nombre = " ".join(str(e.get("nombre", "")).split())
         if nombre and nombre not in vistas:  # el INA repite puertos en series auxiliares sin datos
             vistas[nombre] = SerieIna(int(f["id"]), nombre, e["rio"], lat, alerta, evac)
-    return sorted(vistas.values(), key=lambda s: -s.lat)
+    return sorted(vistas.values(), key=_orden)
+
+
+def _sin_tildes(texto: str) -> str:
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().upper()
+
+
+def _orden(s: "SerieIna") -> tuple[int, float]:
+    """Posición en el río; los puertos que no están en la lista van al final, de norte a sur."""
+    nombre = _sin_tildes(s.puerto)
+    return (ORDEN_RIO.index(nombre) if nombre in ORDEN_RIO else len(ORDEN_RIO), -s.lat)
 
 
 def parse_obs_ina(texto: str) -> list[tuple[datetime, float]]:

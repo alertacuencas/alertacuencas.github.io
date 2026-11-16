@@ -103,6 +103,7 @@ def test_series_ina_un_puerto_por_nombre_de_norte_a_sur(fixture_text):
 
     assert len(nombres) == len(set(nombres)), "el INA repite puertos en series sin datos"
     assert nombres.index("Corrientes") < nombres.index("Santa Fe") < nombres.index("Rosario") < nombres.index("Zárate")
+    assert nombres.index("Santa Ana") < nombres.index("Posadas") < nombres.index("Itatí"), "orden del río, no latitud"
     santa_fe = next(s for s in series if s.puerto == "Santa Fe")
     assert (santa_fe.id, santa_fe.alerta, santa_fe.evacuacion) == (30, 5.3, 5.7)
     assert {s.rio for s in series} <= prefectura.RIOS_INA  # ni el Uruguay ni Yacyretá sin umbral
