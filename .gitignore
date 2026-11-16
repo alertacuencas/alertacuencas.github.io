@@ -12,3 +12,5 @@ data/snapshots/
 docs/pitch.md
 docs/redes.md
 web/data/parana.json
+web/data/publicaciones/
+web/data/publicaciones-memoria.json

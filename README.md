@@ -41,6 +41,10 @@ hacerlo llegar a tiempo.
   el agua), *el río* (mapa y puertos de lo más grave a lo más tranquilo) y *avisar* (próximamente).
 - **El Paraná, puerto por puerto:** la altura de cada escala de Prefectura Naval, de Misiones
   al Delta, dibujada como una vara de escala con sus niveles de alerta y evacuación.
+- **Publicaciones para Instagram (modo prueba):** cada corrida arma un carrusel y el texto
+  con el estado del día y decide si correspondería publicarlo. Se revisa en
+  [`/publicaciones.html`](https://eroveda.github.io/alerta-cuencas-amba/publicaciones.html);
+  reglas en [`docs/publicaciones.md`](docs/publicaciones.md).
 - **Tablero por cuenca:** alertas oficiales del SMN cruzadas con cada cuenca, el arroyo
   Medrano y la lluvia observada en 6 aeropuertos.
 - **Funciona solo, 24/7 y gratis:** GitHub Actions consulta las fuentes cada 10 minutos y

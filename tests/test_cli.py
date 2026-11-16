@@ -46,6 +46,9 @@ def test_poll_junta_fuentes_y_aisla_errores(tmp_path, fixture_text, monkeypatch)
     assert estado["fuentes"]["smn_cap"]["ok"] is True
     assert estado["zonas"]["medrano"]["nivel_smn"] == "naranja"
     assert estado["pronostico_san_fernando"]["max_main"] > 0
+    pub = json.loads((tmp_path / "publicaciones" / "publicacion.json").read_text())
+    assert estado["fuentes"]["publicaciones"]["ok"] is True
+    assert pub["modo"] == "prueba" and pub["imagenes"] == ["1.png", "2.png", "3.png"]
     parana = json.loads((tmp_path / "parana.json").read_text())
     assert estado["fuentes"]["prefectura"]["ok"] is True
     assert parana["puertos"], "parana.json debe traer los puertos del Paraná"
@@ -79,3 +82,4 @@ def test_poll_cap_malformado_no_rompe(tmp_path, fixture_text, monkeypatch):
     assert estado["fuentes"]["smn_cap"]["caps_invalidos"] == 1
     assert estado["fuentes"]["prefectura"]["ok"] is False
     assert not (tmp_path / "parana.json").exists(), "sin datos nuevos no se pisa el último parana.json"
+    assert estado["fuentes"]["publicaciones"]["ok"] is True, "sin Paraná igual se arma la publicación"

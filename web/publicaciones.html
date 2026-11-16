@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Publicaciones · Alerta Cuencas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..900&family=IBM+Plex+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .rev { padding: clamp(1.5rem, 1rem + 3vw, 3rem) var(--gutter); }
+    .rev h1 { margin: 0 0 0.4rem; font-size: clamp(1.8rem, 1rem + 2.5vw, 3rem); font-weight: 800; font-stretch: 85%; letter-spacing: -0.02em; }
+    .rev-estado { margin: 0 0 1.6rem; font-size: 1.1rem; max-width: 60ch; }
+    .rev-estado b { color: var(--c); }
+    .rev-carrusel { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.6rem; scroll-snap-type: x mandatory; }
+    .rev-carrusel img { width: min(78vw, 360px); height: auto; border-radius: var(--r); border: 1px solid var(--linea); scroll-snap-align: start; flex: none; }
+    .rev-texto { margin-top: 1.6rem; max-width: 46rem; }
+    .rev-texto pre { white-space: pre-wrap; font: 1rem/1.5 var(--fuente); background: var(--superficie); padding: 1.2rem 1.4rem; border-radius: var(--r); border: 1px solid var(--linea); margin: 0.6rem 0 0; }
+    .rev-copiar { padding: 0.55rem 1rem; border-radius: 999px; border: 1.5px solid var(--carbon); background: var(--carbon); color: var(--maiz); font: 600 0.9rem var(--fuente); cursor: pointer; }
+    .rev-copiar:focus-visible { outline: 3px solid var(--estuario); outline-offset: 2px; }
+    .rev-historial { margin-top: 2rem; max-width: 46rem; }
+    .rev-historial h2 { font-size: 1.2rem; margin: 0 0 0.6rem; }
+  </style>
+</head>
+<body>
+  <header class="cabecera">
+    <a class="marca" href="./">
+      <span class="marca-escala" aria-hidden="true"></span>
+      <span class="marca-texto">Alerta Cuencas</span>
+    </a>
+  </header>
+  <main class="rev">
+    <p class="cartel-etiqueta">Modo prueba · no se publica nada</p>
+    <h1>Publicación para Instagram</h1>
+    <p class="rev-estado" id="estado">Cargando…</p>
+    <div class="rev-carrusel" id="carrusel"></div>
+    <div class="rev-texto">
+      <button type="button" class="rev-copiar" id="copiar">Copiar el texto</button>
+      <pre id="texto"></pre>
+    </div>
+    <section class="rev-historial" aria-labelledby="t-hist">
+      <h2 id="t-hist">Últimas decisiones</h2>
+      <ul class="lista-simple" id="historial"></ul>
+    </section>
+  </main>
+  <script>
+    "use strict";
+    const BASE = "data/publicaciones/";
+    const MOTIVO = { diario: "resumen del día", cambio: "cambió algo importante", tope: "ya hubo 4 publicaciones hoy", sin_novedad: "sin novedades" };
+    const fmt = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "America/Argentina/Buenos_Aires" });
+    const el = (tag, props = {}, ...hijos) => { const n = Object.assign(document.createElement(tag), props); n.append(...hijos); return n; };
+
+    async function cargar() {
+      const estado = document.getElementById("estado");
+      try {
+        const r = await fetch(`${BASE}publicacion.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const p = await r.json();
+        estado.style.setProperty("--c", p.publicar ? "var(--monte)" : "var(--carbon-suave)");
+        estado.replaceChildren(
+          el("b", { textContent: p.publicar ? "Se publicaría ahora" : "No se publicaría" }),
+          ` (${MOTIVO[p.motivo] ?? p.motivo}). ${p.detalle} Armada el ${fmt.format(new Date(p.generado))}.`);
+        document.getElementById("carrusel").replaceChildren(...p.imagenes.map((n, i) =>
+          el("img", { src: `${BASE}${n}?t=${Date.now()}`, alt: `Imagen ${i + 1} de ${p.imagenes.length} del carrusel`, width: 1080, height: 1350 })));
+        document.getElementById("texto").textContent = p.texto;
+        document.getElementById("historial").replaceChildren(...p.historial.map((h) => el("li", {},
+          el("span", { textContent: fmt.format(new Date(h.ts)) }),
+          el("span", { textContent: `${h.publicar ? "publicaría" : "no"} · ${MOTIVO[h.motivo] ?? h.motivo}` }))));
+      } catch (err) {
+        estado.textContent = `Todavía no hay una publicación armada (${err.message}).`;
+      }
+    }
+    document.getElementById("copiar").addEventListener("click", async (e) => {
+      try {
+        await navigator.clipboard.writeText(document.getElementById("texto").textContent);
+        e.target.textContent = "Copiado ✓";
+      } catch {
+        e.target.textContent = "No se pudo copiar";
+      }
+      setTimeout(() => { e.target.textContent = "Copiar el texto"; }, 2000);
+    });
+    cargar();
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 """Comandos: `zonas` (arma el GeoJSON de cuencas) y `poll` (consulta fuentes y arma estado.json,
-serie.json y parana.json).
+serie.json, parana.json y la publicación para redes en web/publicaciones/).
 
 Uso:
     python -m alertas.cli zonas
@@ -16,6 +16,7 @@ from pathlib import Path
 
 from alertas.db import Base
 from alertas.estado import armar_estado
+from alertas import publicar
 from alertas.fuentes import ina, prefectura, registro, smn_cap
 from alertas.modelos import Lectura
 from alertas.serie import HORAS_ATRAS, armar_serie
@@ -28,6 +29,7 @@ MUESTRAS_GEO = RAIZ / "data" / "samples" / "geo"
 ZONAS_PATH = RAIZ / "web" / "data" / "zonas.geojson"
 ESTADO_PATH = RAIZ / "web" / "data" / "estado.json"
 DB_PATH = RAIZ / "data" / "alertas.sqlite"
+MEMORIA_PUBLICAR = RAIZ / "data" / "publicaciones.json"
 VENTANA_LECTURAS = timedelta(hours=24)
 MAX_DESCARGAS_CAP = 200  # por poll; el resto se baja en los siguientes
 
@@ -85,7 +87,8 @@ def _caps(db: Base, fuentes: dict, ahora: datetime) -> list[smn_cap.AlertaCap]:
     return alertas
 
 
-def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime) -> dict:
+def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime,
+         memoria_publicar: Path | None = None) -> dict:
     fuentes: dict[str, dict] = {}
     db.guardar_lecturas(_lecturas(ahora, fuentes))
     puntos = _consultar("ina", fuentes, ina.obtener) or []
@@ -100,9 +103,17 @@ def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime) -> dict:
                           ina.resumen(puntos, ahora), fuentes, ahora)
     serie = armar_serie(db.lecturas_desde(ahora - timedelta(hours=HORAS_ATRAS)), puntos, ahora)
     _escribir_json(salida.with_name("serie.json"), serie, indent=None)
+    resumen_parana = None
     if parana is not None:  # si no responde ninguna fuente queda el último parana.json publicado
         puertos, via = parana
-        _escribir_json(salida.with_name("parana.json"), prefectura.resumen(puertos, ahora, via), indent=1)
+        resumen_parana = prefectura.resumen(puertos, ahora, via)
+        _escribir_json(salida.with_name("parana.json"), resumen_parana, indent=1)
+    # Publicación para redes (modo prueba): si falla, no frena la web.
+    estado_smn = estado if fuentes.get("smn_cap", {}).get("ok") else None
+    _consultar("publicaciones", fuentes, lambda: publicar.procesar(
+        resumen_parana, estado_smn, serie, memoria_publicar or salida.with_name("publicaciones-memoria.json"),
+        salida.parent / "publicaciones", ahora))
+    estado["fuentes"] = fuentes
     _escribir_json(salida, estado, indent=1)
     return estado
 
@@ -131,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.comando == "zonas":
         zonas(ZONAS_PATH)
     else:
-        estado = poll(Base(DB_PATH), ZONAS_PATH, ESTADO_PATH, ahora_utc())
+        estado = poll(Base(DB_PATH), ZONAS_PATH, ESTADO_PATH, ahora_utc(), memoria_publicar=MEMORIA_PUBLICAR)
         caidas = [n for n, f in estado["fuentes"].items() if not f["ok"]]
         log.info("estado escrito; fuentes caídas: %s", caidas or "ninguna")
     return 0

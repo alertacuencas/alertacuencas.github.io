@@ -1,6 +1,7 @@
 # Monitoreo 24/7 sin depender de la PC local: cada 10 minutos consulta las fuentes,
 # arma estado.json y serie.json, y publica la web en GitHub Pages.
-# La base SQLite (historia de 30 días) se conserva entre corridas con el caché de Actions.
+# La base SQLite (historia de 30 días) y la memoria de publicaciones (qué se vio y qué se
+# publicó) se conservan entre corridas con el caché de Actions.
 # Ojo: GitHub demora los cron hasta ~15 min en horas pico y los desactiva tras
 # 60 días sin commits en el repo.
 name: monitor
@@ -42,7 +43,9 @@ jobs:
       - name: Recuperar base de datos
         uses: actions/cache/restore@v4
         with:
-          path: data/alertas.sqlite
+          path: |
+            data/alertas.sqlite
+            data/publicaciones.json
           key: alertas-db-${{ github.run_id }}
           restore-keys: alertas-db-
 
@@ -55,7 +58,9 @@ jobs:
         if: always() && hashFiles('data/alertas.sqlite') != ''
         uses: actions/cache/save@v4
         with:
-          path: data/alertas.sqlite
+          path: |
+            data/alertas.sqlite
+            data/publicaciones.json
           key: alertas-db-${{ github.run_id }}
 
       - uses: actions/configure-pages@v5
