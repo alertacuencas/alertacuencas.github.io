@@ -36,9 +36,11 @@ hacerlo llegar a tiempo.
 
 - **Sudestada en vivo:** cuánto está el río por encima de la marea astronómica en San
   Fernando, Buenos Aires y La Plata, con un gráfico de 72 h y el pronóstico del INA a 48 h.
+- **Se lee en cuatro pasos:** *hoy* (una oración y tres carteles con el estado del Paraná, la
+  costa y las tormentas), *tu lugar* (escribís tu ciudad y te dice en lenguaje claro cómo está
+  el agua), *el río* (mapa y puertos de lo más grave a lo más tranquilo) y *avisar* (próximamente).
 - **El Paraná, puerto por puerto:** la altura de cada escala de Prefectura Naval, de Misiones
-  al Delta, comparada con sus niveles de alerta y evacuación. Si algún puerto pasa el nivel de
-  evacuación, aparece una banda roja arriba de todo.
+  al Delta, dibujada como una vara de escala con sus niveles de alerta y evacuación.
 - **Tablero por cuenca:** alertas oficiales del SMN cruzadas con cada cuenca, el arroyo
   Medrano y la lluvia observada en 6 aeropuertos.
 - **Funciona solo, 24/7 y gratis:** GitHub Actions consulta las fuentes cada 10 minutos y

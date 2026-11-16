@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Alerta Cuencas AMBA</title>
-  <meta name="description" content="Monitoreo cívico y abierto del Río de la Plata, el río Paraná y las cuencas del AMBA: sudestada en vivo, el Paraná puerto por puerto, pronóstico del INA y alertas del SMN en un solo lugar.">
-  <meta property="og:title" content="Alerta Cuencas AMBA · el río en vivo">
-  <meta property="og:description" content="Cuánto está el Río de la Plata por encima de la marea, ahora y en las próximas 48 h. Datos públicos de SHN, INA y SMN en un solo lugar.">
+  <title>Alerta Cuencas · el río hoy</title>
+  <meta name="description" content="Cómo está hoy el río Paraná, el Río de la Plata y las cuencas del AMBA, en lenguaje claro. Datos públicos de Prefectura, INA, Hidrografía Naval y SMN.">
+  <meta property="og:title" content="Alerta Cuencas · el río hoy">
+  <meta property="og:description" content="Cómo está hoy el río Paraná, el Río de la Plata y las cuencas del AMBA, en lenguaje claro.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://eroveda.github.io/alerta-cuencas-amba/">
   <meta property="og:image" content="https://eroveda.github.io/alerta-cuencas-amba/og.png">
@@ -14,159 +14,107 @@
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..900&family=IBM+Plex+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="barra">
-    <div class="marca">
-      <span class="marca-punto" aria-hidden="true"></span>
-      <h1>Alerta Cuencas <em>AMBA</em></h1>
-    </div>
-    <nav class="nav" aria-label="Secciones">
-      <a href="#rio">El río</a>
-      <a href="#parana">Paraná</a>
-      <a href="#tablero">Tablero</a>
-      <a href="#porque">Por qué</a>
-      <a href="#sumate" class="nav-cta">Sumate</a>
-    </nav>
+  <header class="cabecera">
+    <a class="marca" href="#hoy">
+      <span class="marca-escala" aria-hidden="true"></span>
+      <span class="marca-texto">Alerta Cuencas</span>
+    </a>
+    <ol class="pasos" aria-label="Cómo usar esta página">
+      <li><a href="#hoy" data-paso="hoy"><b>1</b> Hoy</a></li>
+      <li><a href="#tu-lugar" data-paso="tu-lugar"><b>2</b> Tu lugar</a></li>
+      <li><a href="#rio" data-paso="rio"><b>3</b> El río</a></li>
+      <li><a href="#avisar" data-paso="avisar"><b>4</b> Avisar</a></li>
+    </ol>
   </header>
 
-  <a class="banda" id="banda" href="#parana" hidden></a>
-
   <main>
-    <section id="rio" class="rio" aria-labelledby="t-rio-ahora">
-      <div class="rio-texto">
-        <p class="sobretitulo" id="t-rio-ahora">El Río de la Plata ahora · <span id="rio-estacion">San Fernando</span></p>
-        <p class="rio-cifra"><span id="rio-residuo">—</span><small>sobre la marea</small></p>
-        <p class="rio-frase" id="rio-frase">Cargando datos del Servicio de Hidrografía Naval…</p>
-        <div class="rio-tabs" role="group" aria-label="Mareógrafo">
-          <button type="button" data-est="SFER" aria-pressed="true">San Fernando</button>
-          <button type="button" data-est="BSAS" aria-pressed="false">Buenos Aires</button>
-          <button type="button" data-est="LPLA" aria-pressed="false">La Plata</button>
+    <!-- 1 · Leer: el estado de hoy en tres carteles -->
+    <section id="hoy" class="hoy" aria-labelledby="t-hoy">
+      <p class="cartel-etiqueta">Hoy · <span id="hoy-fecha">—</span></p>
+      <h1 id="t-hoy" class="hoy-titular">Cargando cómo está el río…</h1>
+      <div class="carteles" id="carteles"></div>
+      <p class="frescura" id="frescura" aria-live="polite"></p>
+      <p class="no-oficial">No es un sistema oficial. Ante una emergencia seguí a Defensa Civil de tu municipio (103).</p>
+    </section>
+
+    <!-- 2 · Entender: tu lugar -->
+    <section id="tu-lugar" class="tu-lugar" aria-labelledby="t-lugar">
+      <div class="seccion-cabeza">
+        <p class="cartel-etiqueta">Paso 2</p>
+        <h2 id="t-lugar">¿Cómo está el agua en tu lugar?</h2>
+      </div>
+      <div class="buscador">
+        <label for="lugar" class="sr">Escribí tu ciudad, puerto o barrio</label>
+        <input id="lugar" list="lugares" placeholder="Escribí tu ciudad: Santa Fe, Rosario, Tigre…" autocomplete="off">
+        <datalist id="lugares"></datalist>
+      </div>
+      <div class="atajos" id="atajos" aria-label="Lugares más consultados"></div>
+      <article class="ficha" id="ficha" aria-live="polite" hidden></article>
+    </section>
+
+    <!-- 3 · Entender: el recorrido del río -->
+    <section id="rio" class="rio" aria-labelledby="t-rio">
+      <div class="seccion-cabeza">
+        <p class="cartel-etiqueta">Paso 3</p>
+        <h2 id="t-rio">El río, de lo más grave a lo más tranquilo</h2>
+        <p class="bajada">Cada vara es la escala de un puerto, como las que se ven pintadas en los muelles. El agua sube hasta la altura de hoy.</p>
+      </div>
+      <div class="rio-cuerpo">
+        <div class="mapa-caja">
+          <div id="mapa" class="mapa" aria-label="Mapa del río Paraná y el AMBA"></div>
+          <div class="mapa-vistas" role="group" aria-label="Zona del mapa">
+            <button type="button" data-vista="parana" aria-pressed="true">Río Paraná</button>
+            <button type="button" data-vista="amba" aria-pressed="false">AMBA</button>
+          </div>
         </div>
-        <p class="nota">Sudestada = altura medida − marea astronómica. Cuando el viento del sudeste empuja agua hacia la costa,
-          el río sube por encima de lo que marcaría la marea sola.</p>
-      </div>
-      <figure class="grafico">
-        <svg id="grafico" viewBox="0 0 800 300" role="img" aria-labelledby="grafico-titulo"></svg>
-        <figcaption id="grafico-titulo">
-          <span class="ley ley-obs">altura medida</span>
-          <span class="ley ley-astro">marea astronómica</span>
-          <span class="ley ley-prono">pronóstico INA (banda: percentiles 5–95 del modelo)</span>
-        </figcaption>
-      </figure>
-    </section>
-
-    <section id="parana" class="parana" aria-labelledby="t-parana" hidden>
-      <div class="parana-cabeza">
-        <p class="sobretitulo" id="t-parana">El río Paraná · puerto por puerto</p>
-        <p class="rio-cifra"><span id="parana-cifra">—</span><small id="parana-cifra-txt">puertos en evacuación</small></p>
-        <p class="rio-frase" id="parana-frase">Cargando las alturas de Prefectura Naval…</p>
-        <p class="nota"><span id="parana-fuente">Escalas de Prefectura Naval, que se leen cada 2 a 12 horas según el puerto.</span>
-          Los niveles de alerta y evacuación son los que fija Prefectura para cada puerto. Ante una evacuación, seguí a
-          Defensa Civil de tu municipio.</p>
-        <p class="puertos-ley" aria-hidden="true">
-          <span class="ley-marca ley-alerta">alerta</span><span class="ley-marca ley-evac">evacuación</span><span>· tocá un puerto para verlo en el mapa</span>
-        </p>
-      </div>
-      <ol class="puertos" id="puertos" aria-label="Puertos del Paraná, del más grave al menos grave"></ol>
-    </section>
-
-    <section id="tablero" class="tablero" aria-label="Tablero de cuencas">
-      <div id="mapa" class="mapa" aria-label="Mapa de cuencas"></div>
-
-      <aside class="panel" aria-label="Estado actual">
-        <p class="aviso-legal" id="aviso-legal"></p>
-
-        <section aria-labelledby="t-zonas">
-          <h2 id="t-zonas">Cuencas · alertas oficiales del SMN</h2>
-          <ol class="zonas" id="zonas"></ol>
-        </section>
-
-        <section aria-labelledby="t-est">
-          <h2 id="t-est">Río y arroyos</h2>
-          <ul class="estaciones" id="estaciones"></ul>
-        </section>
-
-        <section aria-labelledby="t-lluvia">
-          <h2 id="t-lluvia">Lluvia en aeropuertos</h2>
-          <ul class="aeropuertos" id="aeropuertos"></ul>
-          <p class="nota">Fenómeno observado (METAR), sin milímetros. Se renueva cada 30 min o antes si cambia el tiempo.</p>
-        </section>
-
-        <section aria-labelledby="t-prono">
-          <h2 id="t-prono">San Fernando · próximas 48 h</h2>
-          <div id="pronostico" class="pronostico"></div>
-        </section>
-
-        <footer class="pie">
-          <p id="actualizado">Cargando…</p>
-          <ul class="fuentes" id="fuentes"></ul>
-        </footer>
-      </aside>
-    </section>
-
-    <section id="porque" class="porque" aria-labelledby="t-porque">
-      <h2 class="titulo-seccion" id="t-porque">Por qué existe esto</h2>
-      <div class="columnas">
-        <article>
-          <p class="num">01</p>
-          <h3>Se viene una temporada de El Niño</h3>
-          <p>El Niño suele traer más lluvia en la región y crecidas del Paraná, que se suman a las sudestadas. En el Delta y en la costa de Tigre, San Fernando,
-            Quilmes y Avellaneda, miles de familias dependen de saber a tiempo cuánto va a subir el agua.</p>
-        </article>
-        <article>
-          <p class="num">02</p>
-          <h3>Los datos existen, el aviso no llega</h3>
-          <p>En la DANA de Valencia (2024) la alerta meteorológica estaba desde la mañana y el aviso a los celulares llegó
-            cuando el agua ya había entrado a las casas. Acá los datos también existen: Hidrografía Naval,
-            el INA y el SMN publican información valiosa, pero técnica, dispersa y difícil de leer en el celular.</p>
-        </article>
-        <article>
-          <p class="num">03</p>
-          <h3>Traducir y llegar</h3>
-          <p>Juntamos las fuentes públicas en un solo lugar, en lenguaje claro. La próxima etapa: avisos cortos de sudestada
-            para referentes barriales e isleños, que los reenvían por WhatsApp a quien más los necesita.</p>
-        </article>
-      </div>
-
-      <div class="huecos">
-        <h3>Datos públicos que todavía faltan</h3>
-        <ul>
-          <li><b>Radar del SMN</b> sin acceso abierto por máquina.</li>
-          <li><b>Lluvia medida en CABA</b> (red SAT de la Ciudad) sin datos abiertos en tiempo real.</li>
-          <li><b>Matanza-Riachuelo:</b> la red de ACUMAR no tiene observaciones públicas desde 2023.</li>
-          <li><b>Río Reconquista:</b> sin alturas públicas en tiempo real.</li>
-        </ul>
-        <p class="nota">Publicamos el relevamiento completo de fuentes para que se abran estos datos.</p>
+        <ol class="escalas" id="escalas" aria-label="Puertos del Paraná, del más grave al más tranquilo"></ol>
       </div>
     </section>
 
-    <section id="sumate" class="sumate" aria-labelledby="t-sumate">
-      <h2 class="titulo-seccion" id="t-sumate">Sumate</h2>
-      <div class="sumate-grid">
+    <!-- 4 · Avisar (etapa 2) -->
+    <section id="avisar" class="avisar" aria-labelledby="t-avisar">
+      <p class="cartel-etiqueta cartel-etiqueta--claro">Paso 4 · Próximamente</p>
+      <h2 id="t-avisar">Avisarle a quien lo necesita</h2>
+      <p>Estamos pensando cómo hacer llegar el aviso de tu lugar a tiempo: a vos, a tu barrio o a tu grupo de vecinos.
+        Si sos referente, organización o trabajás en Defensa Civil, contanos cómo te serviría recibirlo.</p>
+      <a class="boton-claro" href="https://github.com/eroveda/alerta-cuencas-amba/issues/new">Contanos cómo te sirve</a>
+    </section>
+
+    <!-- Detalle para quien lo necesita -->
+    <details class="detalle">
+      <summary>Detalle técnico: sudestada, pronóstico del INA, lluvia y fuentes</summary>
+      <div class="detalle-cuerpo">
+        <div class="sudestada">
+          <h3>Río de la Plata en <span id="sud-est">San Fernando</span></h3>
+          <div class="sud-tabs" role="group" aria-label="Mareógrafo">
+            <button type="button" data-est="SFER" aria-pressed="true">San Fernando</button>
+            <button type="button" data-est="BSAS" aria-pressed="false">Buenos Aires</button>
+            <button type="button" data-est="LPLA" aria-pressed="false">La Plata</button>
+          </div>
+          <svg id="grafico" viewBox="0 0 800 300" role="img" aria-label="Altura medida, marea astronómica y pronóstico del INA"></svg>
+          <p class="nota">Línea llena: altura medida (Hidrografía Naval). Punteada: marea astronómica. Naranja: pronóstico del INA, con su banda de incertidumbre.
+            La diferencia entre la medida y la marea es la sudestada.</p>
+        </div>
         <div>
-          <p class="sumate-lema">Un proyecto cívico, abierto y sin fines de lucro.</p>
-          <p>Buscamos <b>referentes</b> del Delta y la costa sur, <b>organizaciones</b> que trabajen en barrios ribereños
-            y <b>apoyo</b> para sostener el servidor y llegar a la próxima temporada de tormentas con avisos funcionando.</p>
+          <h3>Lluvia en aeropuertos</h3>
+          <ul class="lista-simple" id="lluvia"></ul>
+          <h3>Fuentes</h3>
+          <ul class="lista-simple" id="fuentes"></ul>
+          <p class="nota" id="actualizado"></p>
         </div>
-        <ul class="sumate-hitos">
-          <li data-hecho="true"><b>Hecho</b> Monitoreo automático cada ~10 min de SHN, INA, SMN, SNIH y METAR</li>
-          <li data-hecho="true"><b>Hecho</b> Tablero público por cuenca</li>
-          <li><b>Próximo</b> Avisos de sudestada en modo prueba</li>
-          <li><b>Próximo</b> Red de referentes en el Delta y la costa sur</li>
-        </ul>
       </div>
-      <p class="sumate-contacto" id="contacto"><a href="https://github.com/eroveda/alerta-cuencas-amba/issues/new">Escribinos</a> · <a href="https://github.com/eroveda/alerta-cuencas-amba">código abierto en GitHub</a></p>
-    </section>
+    </details>
   </main>
 
-  <footer class="pie-sitio">
-    <p>No es un sistema oficial. Ante emergencias seguí al SMN, a Hidrografía Naval y a Defensa Civil (103).</p>
-    <p>Datos: Servicio de Hidrografía Naval · Prefectura Naval Argentina · Instituto Nacional del Agua · Servicio Meteorológico Nacional · SNIH · NOAA AWC.</p>
+  <footer class="pie">
+    <p>Proyecto cívico, abierto y sin fines de lucro · <a href="https://github.com/eroveda/alerta-cuencas-amba">código abierto</a></p>
+    <p>Datos: Prefectura Naval Argentina · Instituto Nacional del Agua · Servicio de Hidrografía Naval · Servicio Meteorológico Nacional · NOAA AWC</p>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

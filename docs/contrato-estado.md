@@ -1,6 +1,6 @@
 # Contrato de `web/data/estado.json` — versión 1
 
-Lo genera `alertas/estado.py` (`armar_estado`) y lo consume `web/app.js`.
+Lo genera `alertas/estado.py` (`armar_estado`) y lo consume `web/app.js` (constante `VERSIONES`).
 Si el mapa recibe una versión distinta de la que espera, **no dibuja nada** y lo avisa,
 en lugar de mostrar datos mal interpretados.
 
