@@ -7,6 +7,7 @@
   --carbon-suave: #5a5047;
   --leon: #8c5a2b;          /* el Paraná, "color león" */
   --estuario: #4a7c8c;      /* Río de la Plata */
+  --agua: #5b9ec4;          /* el agua en las varas de escala y la marca */
   --cartel: #4a2f18;        /* señalética de parque */
   --cartel-texto: #fbf6ee;
   --urucum: #b3261e;        /* evacuación */
@@ -33,6 +34,7 @@
     --superficie: #201a14;
     --cartel: #5a3a1f;
     --leon: #c08a52;
+    --agua: #7fb6d8;
     --estuario: #7fb1c0;
   }
 }
@@ -55,7 +57,7 @@ a { color: inherit; }
 .marca-escala {
   width: 0.55rem; height: 1.6rem; border-radius: 1px;
   background: repeating-linear-gradient(to bottom, var(--cartel-texto) 0 3px, transparent 3px 6px);
-  box-shadow: inset 0 -0.55rem 0 var(--leon);
+  box-shadow: inset 0 -0.55rem 0 var(--agua);
 }
 .marca-texto { font-weight: 800; font-stretch: 80%; font-size: 1.15rem; letter-spacing: -0.01em; text-transform: uppercase; }
 .pasos { display: flex; gap: 0.25rem; list-style: none; margin: 0; padding: 0; }
@@ -159,7 +161,7 @@ a { color: inherit; }
 }
 .escala-agua {
   position: absolute; left: 0; right: 0; bottom: 0; height: 0;
-  background: color-mix(in srgb, var(--leon) 82%, transparent);
+  background: color-mix(in srgb, var(--agua) 85%, transparent);
   transition: height 900ms var(--ease);
 }
 .escala[data-nivel="evacuacion"] .escala-agua { background: color-mix(in srgb, var(--urucum) 85%, transparent); }

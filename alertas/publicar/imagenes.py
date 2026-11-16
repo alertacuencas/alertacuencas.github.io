@@ -18,7 +18,7 @@ MARGEN = 80
 TIPOS = Path(__file__).resolve().parent.parent / "tipografias"
 MAIZ, MAIZ_HONDO, SUPERFICIE = "#f4ebdd", "#e9dcc6", "#fbf6ee"
 CARBON, CARBON_SUAVE, LINEA = "#1e1a16", "#5a5047", "#d8c9b0"
-CARTEL, CARTEL_TEXTO, LEON = "#4a2f18", "#fbf6ee", "#8c5a2b"
+CARTEL, CARTEL_TEXTO, AGUA = "#4a2f18", "#fbf6ee", "#5b9ec4"
 COLOR = {"evacuacion": "#b3261e", "alerta": "#e0a526", "normal": "#3f6b3a", "sin": "#9a8f82",
          "rojo": "#b3261e", "naranja": "#d9661b", "amarillo": "#e0a526", "verde": "#3f6b3a"}
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
@@ -73,7 +73,7 @@ def _marco(numero: int, total: int, ahora: datetime) -> tuple[Image.Image, Image
     # la "vara" de la marca: franjas y agua
     for i in range(7):
         d.rectangle([MARGEN, 30 + i * 8, MARGEN + 14, 33 + i * 8], fill=CARTEL_TEXTO)
-    d.rectangle([MARGEN, 66, MARGEN + 14, 82], fill=LEON)
+    d.rectangle([MARGEN, 66, MARGEN + 14, 82], fill=AGUA)
     d.text((MARGEN + 34, 32), "ALERTA CUENCAS", font=_archivo(40, 800, 80), fill=CARTEL_TEXTO)
     d.text((ANCHO - MARGEN, 42), f"{CUENTA}  {numero}/{total}", font=_mono(26), fill=CARTEL_TEXTO, anchor="ra")
     d.line([MARGEN, ALTO - 140, ANCHO - MARGEN, ALTO - 140], fill=LINEA, width=2)
@@ -122,11 +122,12 @@ def _vara(d: ImageDraw.ImageDraw, x: int, y: int, ancho: int, alto: int, p: dict
     tope = max(p["evacuacion"] * 1.35, p["altura"] * 1.1)
     nivel_y = lambda v: y + alto - round(min(1, max(0, v / tope)) * alto)  # noqa: E731
     d.rectangle([x, y, x + ancho, y + alto], fill=SUPERFICIE, outline=CARBON, width=3)
-    agua = COLOR["evacuacion"] if p["nivel"] == "evacuacion" else LEON
+    evac = p["nivel"] == "evacuacion"
+    agua = COLOR["evacuacion"] if evac else AGUA
     superficie = nivel_y(p["altura"])
     d.rectangle([x + 3, superficie, x + ancho - 3, y + alto - 3], fill=agua)
     for yy in range(y + 6, y + alto - 4, 16):  # las franjas de la escala se ven también bajo el agua
-        d.rectangle([x + 3, yy, x + ancho // 2, yy + 7], fill=CARBON if yy < superficie else "#e8c9c0")
+        d.rectangle([x + 3, yy, x + ancho // 2, yy + 7], fill=CARBON if yy < superficie else ("#e8c9c0" if evac else "#d3e6f1"))
     for v, color in ((p["alerta"], COLOR["alerta"]), (p["evacuacion"], COLOR["evacuacion"])):
         yy = nivel_y(v)
         d.rectangle([x - 10, yy - 4, x + ancho + 10, yy + 4], fill=color)
