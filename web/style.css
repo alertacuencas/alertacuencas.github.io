@@ -242,6 +242,16 @@ h2 {
 .puerto[data-nivel="evacuacion"] { border-left-color: var(--rojo); background: color-mix(in srgb, var(--rojo) 7%, transparent); }
 .puerto[data-viejo="true"] { opacity: 0.5; border-left-color: transparent; background: none; }
 .puerto-nombre { font-weight: 600; font-size: 0.92rem; }
+.puerto[tabindex="0"] { cursor: pointer; }
+.puerto[tabindex="0"]:hover, .puerto[tabindex="0"]:focus-visible { background: var(--superficie); outline: none; }
+.puerto[tabindex="0"]:focus-visible { box-shadow: inset 0 0 0 2px var(--agua); }
+.vista-mapa { display: flex; gap: 0; box-shadow: 0 1px 4px rgb(0 0 0 / 0.3); border-radius: var(--r); overflow: hidden; }
+.vista-mapa button {
+  font: 600 0.75rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer;
+  padding: 0.45rem 0.75rem; border: 0; background: #fff; color: #16130f;
+}
+.vista-mapa button + button { border-left: 1px solid #ccc; }
+.vista-mapa button:hover, .vista-mapa button:focus-visible { background: #16130f; color: #fff; outline: none; }
 .puerto-barra { position: relative; height: 0.7rem; background: var(--superficie); border-radius: 2px; overflow: hidden; }
 .puerto-agua { position: absolute; inset: 0 auto 0 0; background: var(--agua); border-radius: 2px; }
 .puerto[data-nivel="evacuacion"] .puerto-agua { background: var(--rojo); }
@@ -279,3 +289,4 @@ h2 {
   .panel { border-left: 0; border-top: 1px solid var(--linea); padding: 1rem; }
   .barra { padding: 0.75rem 1rem; }
 }
+.tablero, .parana, .rio, .porque, .sumate { scroll-margin-top: 3.6rem; }

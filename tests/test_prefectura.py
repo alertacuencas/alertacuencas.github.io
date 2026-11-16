@@ -37,6 +37,8 @@ def test_parsea_la_tabla_real_del_16_de_noviembre(fixture_text):
     assert puertos["San Javier (Santa Fe)"].nivel == "evacuacion"
     assert puertos["San Fernando"].rio == "DELTA PARANA"
     assert puertos["Paraná"].nivel == "evacuacion"
+    assert (santa_fe.lat, santa_fe.lon) == (-31.6515, -60.7002)
+    assert puertos["Rosario"].lat is not None
     assert "Zárate" in puertos
     assert "Paso de la Patria" in puertos
 
@@ -118,11 +120,12 @@ def test_puerto_ina_desde_observaciones_reales(fixture_text):
 
     assert (p.altura, p.variacion, p.tendencia, p.nivel) == (5.77, 0.0, "estable", "evacuacion")
     assert p.ts == "2026-11-16T03:00:00Z"
+    assert round(p.lat, 2) == -31.65 and round(p.lon, 2) == -60.70
     assert p.viejo is False
 
 
 def test_puerto_ina_sin_observaciones_o_con_basura():
-    serie = prefectura.SerieIna(1, "X", "PARANAINF", -31.0, 5.0, 5.5)
+    serie = prefectura.SerieIna(1, "X", "PARANAINF", -31.0, -60.0, 5.0, 5.5)
     assert prefectura.puerto_ina(serie, [], AHORA) is None
     basura = '[{"timestart": "no-es-fecha", "valor": 1}, {"timestart": "2026-11-16T03:00:00Z", "valor": null},' \
              ' {"timestart": "2026-11-16T03:00:00Z", "valor": 999}]'

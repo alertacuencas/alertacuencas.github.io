@@ -17,7 +17,7 @@ const fmtHora = new Intl.DateTimeFormat("es-AR", {
   timeZone: "America/Argentina/Buenos_Aires",
 });
 
-const mapa = L.map("mapa", { zoomControl: true }).setView([-34.6, -58.5], 10);
+const mapa = L.map("mapa", { zoomControl: true }).setView([-34.6, -58.5], 10); // = VISTA_AMBA
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 16,
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Cuencas: COHIFE, BA Data',
@@ -269,6 +269,60 @@ async function refrescarRio() {
 const VERSION_PARANA = 1;
 const NIVEL_TXT = { evacuacion: "evacuación", alerta: "alerta", normal: "normal" };
 const FLECHA = { sube: "▲ sube", baja: "▼ baja", estable: "= estable", sin_dato: "" };
+const NIVEL_HEX = { evacuacion: "#c4221b", alerta: "#e3b417", normal: "#1f5f8b" };
+const GRAVEDAD = { evacuacion: 0, alerta: 1, normal: 2 };
+const VISTA_AMBA = { centro: [-34.6, -58.5], zoom: 10 };
+const capaParana = L.layerGroup().addTo(mapa);
+let limitesParana = null;
+
+// Más grave primero: evacuación, alerta, normal; dentro de cada nivel, cuánto se acerca o
+// pasa del nivel de evacuación. Las lecturas viejas van al final.
+function porGravedad(a, b) {
+  return (a.viejo - b.viejo) || (GRAVEDAD[a.nivel] - GRAVEDAD[b.nivel])
+    || (b.altura / b.evacuacion - a.altura / a.evacuacion);
+}
+
+function verEnMapa(p) {
+  if (p.lat == null) return;
+  document.getElementById("tablero").scrollIntoView({ behavior: "smooth" });
+  mapa.flyTo([p.lat, p.lon], 11);
+}
+
+function textoPuerto(p) {
+  return `${p.puerto}: ${metros(p.altura)} · ${p.viejo ? "sin dato reciente" : NIVEL_TXT[p.nivel]}`
+    + ` (alerta ${metros(p.alerta)}, evacuación ${metros(p.evacuacion)})`;
+}
+
+function marcadoresParana(puertos) {
+  capaParana.clearLayers();
+  const puntos = [];
+  for (const p of puertos) {
+    if (p.lat == null || p.lon == null) continue;
+    puntos.push([p.lat, p.lon]);
+    L.circleMarker([p.lat, p.lon], {
+      radius: p.nivel === "normal" ? 5 : 8, weight: 1.5, color: "#16130f",
+      fillColor: p.viejo ? "#9a9184" : NIVEL_HEX[p.nivel], fillOpacity: 0.95,
+    }).bindTooltip(el("span", { textContent: textoPuerto(p) })).addTo(capaParana);
+  }
+  limitesParana = puntos.length ? L.latLngBounds(puntos) : null;
+}
+
+const ControlVista = L.Control.extend({
+  options: { position: "topright" },
+  onAdd() {
+    const caja = L.DomUtil.create("div", "vista-mapa");
+    L.DomEvent.disableClickPropagation(caja);
+    const boton = (txt, fn) => {
+      const b = el("button", { type: "button", textContent: txt });
+      b.addEventListener("click", fn);
+      caja.append(b);
+    };
+    boton("AMBA", () => mapa.flyTo(VISTA_AMBA.centro, VISTA_AMBA.zoom));
+    boton("Paraná", () => { if (limitesParana) mapa.flyToBounds(limitesParana, { padding: [20, 20] }); });
+    return caja;
+  },
+});
+new ControlVista().addTo(mapa);
 
 function enumerar(nombres, max = 4) {
   if (nombres.length <= max) return nombres.length > 1
@@ -281,7 +335,8 @@ function filaPuerto(p) {
   const tope = p.evacuacion * 1.2;
   const pct = (v) => `${Math.max(0, Math.min(100, (v / tope) * 100)).toFixed(1)}%`;
   const tendencia = FLECHA[p.tendencia] ?? "";
-  return el("li", { className: "puerto", dataset: { nivel: p.nivel, viejo: String(p.viejo) } },
+  const fila = el("li", { className: "puerto", dataset: { nivel: p.nivel, viejo: String(p.viejo) },
+    tabIndex: p.lat == null ? -1 : 0, title: p.lat == null ? "" : "Ver en el mapa" },
     el("span", { className: "puerto-nombre", textContent: p.puerto }),
     el("span", { className: "puerto-barra", role: "img",
       ariaLabel: `${metros(p.altura)}; alerta ${metros(p.alerta)}, evacuación ${metros(p.evacuacion)}` },
@@ -293,6 +348,9 @@ function filaPuerto(p) {
     el("span", { className: "puerto-nivel", textContent: p.viejo ? "sin dato reciente" : NIVEL_TXT[p.nivel] }),
     el("span", { className: "puerto-hora", textContent: hora(p.ts) }),
   );
+  fila.addEventListener("click", () => verEnMapa(p));
+  fila.addEventListener("keydown", (e) => { if (e.key === "Enter") verEnMapa(p); });
+  return fila;
 }
 
 function pintarParana(d) {
@@ -309,7 +367,8 @@ function pintarParana(d) {
   if (alerta.length) partes.push(`${enumerar(alerta)} ${alerta.length === 1 ? "está" : "están"} en alerta.`);
   if (!partes.length) partes.push("Ningún puerto del Paraná está en alerta ni en evacuación.");
   document.getElementById("parana-frase").textContent = partes.join(" ");
-  document.getElementById("puertos").replaceChildren(...d.puertos.map(filaPuerto));
+  document.getElementById("puertos").replaceChildren(...[...d.puertos].sort(porGravedad).map(filaPuerto));
+  marcadoresParana(d.puertos);
   const ultima = d.puertos.map((p) => p.ts).sort().at(-1);
   document.getElementById("parana-fuente").textContent = d.via === "ina"
     ? `Escalas de Prefectura Naval publicadas por el INA: una lectura por día, la de las 00 h (última: ${hora(ultima)}).`

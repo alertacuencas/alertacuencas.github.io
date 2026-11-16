@@ -34,6 +34,51 @@ INA_OBS = "https://alerta.ina.gob.ar/a5/obs/puntual/series/{id}/observaciones?ti
 # Códigos de río del INA para el Paraná y sus brazos del Delta.
 RIOS_INA = frozenset({"PARANAMED", "PARANAINF", "SANJAVIER", "PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY"})
 INA_DIAS_ATRAS = 3
+# Ubicación de cada escala (lat, lon), tomada del catálogo de estaciones del INA (red
+# "alturas_prefe"). La tabla de Prefectura no trae coordenadas.
+COORDS = {
+    "BELLA VISTA": (-28.5184, -59.0593),
+    "BRAZO LARGO": (-33.8833, -58.9),
+    "CAMPANA": (-34.1556, -58.9582),
+    "CONFLUENCIA": (-25.5927, -54.5934),
+    "CORRIENTES": (-27.4636, -58.8389),
+    "DIAMANTE": (-32.0716, -60.6432),
+    "EL DORADO": (-26.3833, -54.7),
+    "ELDORADO": (-26.3833, -54.7),
+    "EMPEDRADO": (-27.9541, -58.8185),
+    "ESCOBAR": (-34.3, -58.7333),
+    "ESQUINA": (-30.0192, -59.5366),
+    "GOYA": (-29.1438, -59.273),
+    "GUAZUCITO": (-34.0167, -58.4),
+    "HERNANDARIAS": (-31.2265, -59.9919),
+    "IBICUY": (-33.762, -59.1801),
+    "IGUAZU": (-25.5833, -54.5667),
+    "ITA IBATE": (-27.4234, -57.3333),
+    "ITATI": (-27.2668, -58.2441),
+    "ITUZAINGO": (-27.5833, -56.7),
+    "LA PAZ": (-30.7342, -59.6381),
+    "LIBERTAD": (-25.9167, -54.6211),
+    "LIBERTADOR": (-26.8, -55.0333),
+    "PARANA": (-31.7182, -60.5226),
+    "PASO DE LA PATRIA": (-27.3333, -58.5833),
+    "POSADAS": (-27.3667, -55.8833),
+    "PUERTO IGUAZU": (-25.5833, -54.5667),
+    "PUERTO MANI": (-27.1064, -55.5222),
+    "RAMALLO": (-33.4781, -59.9957),
+    "RECONQUISTA": (-29.2376, -59.5812),
+    "ROSARIO": (-32.9433, -60.6308),
+    "SAN LORENZO": (-32.7336, -60.7257),
+    "SAN LORENZO (SAN MARTIN)": (-32.7336, -60.7257),
+    "SAN NICOLAS": (-33.342, -60.1895),
+    "SAN PEDRO": (-33.6745, -59.6497),
+    "SANTA ANA": (-27.3351, -55.5884),
+    "SANTA ELENA": (-30.95, -59.7833),
+    "SANTA FE": (-31.6515, -60.7002),
+    "VILLA CONSTITUCION": (-33.2354, -60.3091),
+    "YACYRETA AFLUENTE": (-27.4826, -56.7272),
+    "YACYRETA EFLUENTE": (-27.4826, -56.7272),
+    "ZARATE": (-34.0988, -59.0109),
+}
 # Orden de la tabla de Prefectura, aguas abajo. En Misiones y Corrientes el río corre de
 # este a oeste, así que ordenar por latitud mezclaría los puertos.
 ORDEN_RIO = (
@@ -69,6 +114,8 @@ class Puerto:
     nivel: str      # "evacuacion" | "alerta" | "normal"
     tendencia: str  # "sube" | "baja" | "estable" | "sin_dato"
     viejo: bool
+    lat: float | None = None
+    lon: float | None = None
 
 
 class _Tabla(HTMLParser):
@@ -159,11 +206,13 @@ def _puerto(fila: dict[str, str], ahora: datetime) -> Puerto | None:
     except (ValueError, KeyError, IndexError):
         return None
     variacion = _numero(fila.get("Variacion"))
+    nombre_crudo = _sin_tildes(" ".join(fila.get("Puerto", "").split()))
     return Puerto(
         puerto=_nombre(fila.get("Puerto", "")),
         rio=rio, altura=altura, variacion=variacion, ts=iso_utc(ts),
         alerta=alerta, evacuacion=evacuacion, nivel=_nivel(altura, alerta, evacuacion),
         tendencia=_tendencia(variacion), viejo=ahora - ts > DATO_VIEJO,
+        lat=COORDS.get(nombre_crudo, (None, None))[0], lon=COORDS.get(nombre_crudo, (None, None))[1],
     )
 
 
@@ -180,6 +229,7 @@ class SerieIna:
     puerto: str
     rio: str
     lat: float
+    lon: float
     alerta: float
     evacuacion: float
 
@@ -193,14 +243,14 @@ def parse_series_ina(texto: str) -> list[SerieIna]:
         e = f.get("estacion") or {}
         try:
             alerta, evac = float(e["nivel_alerta"]), float(e["nivel_evacuacion"])
-            lat = float(e["geom"]["coordinates"][1])
+            lon, lat = float(e["geom"]["coordinates"][0]), float(e["geom"]["coordinates"][1])
         except (KeyError, TypeError, ValueError, IndexError):
             continue
         if e.get("rio") not in RIOS_INA or not e.get("public", True) or not (f.get("date_range") or {}).get("timeend"):
             continue
         nombre = " ".join(str(e.get("nombre", "")).split())
         if nombre and nombre not in vistas:  # el INA repite puertos en series auxiliares sin datos
-            vistas[nombre] = SerieIna(int(f["id"]), nombre, e["rio"], lat, alerta, evac)
+            vistas[nombre] = SerieIna(int(f["id"]), nombre, e["rio"], lat, lon, alerta, evac)
     return sorted(vistas.values(), key=_orden)
 
 
@@ -235,7 +285,7 @@ def puerto_ina(serie: SerieIna, obs: list[tuple[datetime, float]], ahora: dateti
     return Puerto(
         puerto=serie.puerto, rio=serie.rio, altura=altura, variacion=variacion, ts=iso_utc(ts),
         alerta=serie.alerta, evacuacion=serie.evacuacion, nivel=_nivel(altura, serie.alerta, serie.evacuacion),
-        tendencia=_tendencia(variacion), viejo=ahora - ts > DATO_VIEJO,
+        tendencia=_tendencia(variacion), viejo=ahora - ts > DATO_VIEJO, lat=serie.lat, lon=serie.lon,
     )
 
 
