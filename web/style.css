@@ -178,7 +178,7 @@ a { color: inherit; }
 /* ── 3 · El río ── */
 .rio-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 2rem; align-items: start; }
 .mapa-caja { position: sticky; top: 4.5rem; }
-.mapa { height: min(72vh, 640px); border-radius: var(--r); border: 1px solid var(--linea); background: var(--superficie); }
+.mapa { isolation: isolate; height: min(72vh, 640px); border-radius: var(--r); border: 1px solid var(--linea); background: var(--superficie); }
 .mapa-vistas { position: absolute; top: 0.7rem; right: 0.7rem; z-index: 500; display: flex; border-radius: 999px; overflow: hidden; box-shadow: 0 2px 8px rgb(0 0 0 / 0.25); }
 .mapa-vistas button {
   padding: 0.5rem 0.9rem; border: 0; background: #fff; color: #1e1a16; font: 600 0.85rem var(--fuente); cursor: pointer;

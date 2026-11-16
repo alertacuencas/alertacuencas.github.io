@@ -4,11 +4,13 @@ Gracias por querer aportar. No hace falta programar para ayudar.
 
 ## Sin programar
 
-- **Si vivís cerca del agua** (Delta, costa sur, ribera): contanos en un issue qué dato te
-  sirve, cuál no entendés y cómo te gustaría recibir un aviso.
-- **Si conocés una fuente de datos pública** que no estamos usando: abrí un issue con el link
-  y qué mide.
-- **Si encontrás un error** en un dato o en la web: abrí un issue con una captura y la hora.
+- **Si vivís cerca del agua** (Delta, costa sur, ribera): escribinos por mensaje directo a
+  [@alertacuencas](https://ig.me/m/alertacuencas) en Instagram: qué dato te sirve, cuál no
+  entendés y cómo te gustaría recibir un aviso.
+- **Si conocés una fuente de datos pública** que no estamos usando: mandanos el link por
+  Instagram, o abrí un issue si usás GitHub.
+- **Si encontrás un error** en un dato o en la web: mandanos una captura con la hora por
+  Instagram, o abrí un issue.
 
 ## Programando
 
