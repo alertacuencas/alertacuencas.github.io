@@ -1,7 +1,7 @@
 # Alerta Cuencas AMBA
 
 **Qué hace:** muestra en vivo cuánto sube el Río de la Plata, el Paraná (puerto por puerto, de Misiones al Delta) y las cuencas del AMBA, con datos de Hidrografía Naval, Prefectura, el INA y el SMN.<br>
-**Cómo se prueba:** abrí <https://eroveda.github.io/alerta-cuencas-amba/>, o en tu máquina `uv sync && uv run pytest` (corre sin internet).
+**Cómo se prueba:** abrí <https://alertacuencas.github.io/alerta-cuencas-amba/>, o en tu máquina `uv sync && uv run pytest` (corre sin internet).
 
 **El Río de la Plata y las cuencas del AMBA, en vivo y en criollo.**
 
@@ -15,7 +15,7 @@ celular de quien vive cerca del agua.
 
 ![Alerta Cuencas AMBA: la sudestada en vivo](web/og.png)
 
-**Web en vivo:** <https://eroveda.github.io/alerta-cuencas-amba/>
+**Web en vivo:** <https://alertacuencas.github.io/alerta-cuencas-amba/>
 
 ---
 
@@ -43,7 +43,7 @@ hacerlo llegar a tiempo.
   al Delta, dibujada como una vara de escala con sus niveles de alerta y evacuación.
 - **Publicaciones para Instagram (modo prueba):** cada corrida arma un carrusel y el texto
   con el estado del día y decide si correspondería publicarlo. Se revisa en
-  [`/publicaciones.html`](https://eroveda.github.io/alerta-cuencas-amba/publicaciones.html);
+  [`/publicaciones.html`](https://alertacuencas.github.io/alerta-cuencas-amba/publicaciones.html);
   reglas en [`docs/publicaciones.md`](docs/publicaciones.md).
 - **Tablero por cuenca:** alertas oficiales del SMN cruzadas con cada cuenca, el arroyo
   Medrano y la lluvia observada en 6 aeropuertos.
@@ -81,7 +81,7 @@ abran, está en [`docs/fuentes/`](docs/fuentes/README.md).
 Requiere Python 3.12+ y [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/eroveda/alerta-cuencas-amba && cd alerta-cuencas-amba
+git clone https://github.com/alertacuencas/alerta-cuencas-amba && cd alerta-cuencas-amba
 uv sync
 .venv/bin/python -m alertas.cli zonas   # arma web/data/zonas.geojson
 scripts/monitor.sh                      # consulta las fuentes cada 5 min y sirve el mapa

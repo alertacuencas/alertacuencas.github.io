@@ -13,7 +13,7 @@ from alertas.publicar import imagenes, reglas, resumen
 
 MODO = "prueba"
 VERSION = 1
-URL_WEB = "https://eroveda.github.io/alerta-cuencas-amba/"
+URL_WEB = "https://alertacuencas.github.io/alerta-cuencas-amba/"
 ETIQUETAS = "#RíoParaná #Crecida #SantaFe #EntreRíos #Delta #RíoDeLaPlata #AMBA"
 AVISO = "No es un sistema oficial. Ante una emergencia seguí a Defensa Civil de tu municipio (103)."
 
