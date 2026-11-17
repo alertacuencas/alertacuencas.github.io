@@ -1,3 +1,8 @@
+# Credenciales locales (nunca al repo)
+.env
+.env-*
+.env.*
+
 .venv/
 __pycache__/
 *.pyc
@@ -14,3 +19,11 @@ docs/redes.md
 web/data/parana.json
 web/data/publicaciones/
 web/data/publicaciones-memoria.json
+
+# Reel diario: en git solo va el guion de cada día
+reels/*/*.mp4
+reels/*/*.mp3
+reels/*/*.wav
+reels/*/*.pcm
+reels/*/*.png
+reels/*/trabajo/
