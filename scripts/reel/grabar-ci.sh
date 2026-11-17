@@ -34,10 +34,16 @@ DURACION=$({ "$FF" -hide_banner -i "$DIA/locucion.mp3" 2>&1 || true; } | grep -o
   -t "$DURACION" -c:v libx264 -preset ultrafast -crf 16 -pix_fmt yuv420p "$TOMA" &
 GRABACION=$!
 sleep 0.5
+# --no-sandbox: en Ubuntu 24.04 (los runners de GitHub) el sandbox de Chrome no arranca por
+# la restricción de AppArmor a los user namespaces. Es un runner descartable y la página es local.
+LOG_NAVEGADOR="$(mktemp)"
 DISPLAY="$PANTALLA" google-chrome --user-data-dir="$(mktemp -d)" --no-first-run --no-default-browser-check \
-  --disable-gpu --hide-scrollbars --force-device-scale-factor=3 --window-position=0,0 --window-size=360,640 \
-  --autoplay-policy=no-user-gesture-required --app=http://127.0.0.1:8791/ >/dev/null 2>&1 &
+  --no-sandbox --disable-dev-shm-usage --disable-gpu --hide-scrollbars --force-device-scale-factor=3 \
+  --window-position=0,0 --window-size=360,640 --app=http://127.0.0.1:8791/ >"$LOG_NAVEGADOR" 2>&1 &
 NAVEGADOR=$!
 wait $GRABACION
+if ! kill -0 $NAVEGADOR 2>/dev/null; then
+  echo "el navegador se cerró antes de terminar la toma:" >&2; tail -20 "$LOG_NAVEGADOR" >&2; exit 1
+fi
 kill $NAVEGADOR 2>/dev/null || true
 echo "toma: $TOMA ($DURACION s)"
