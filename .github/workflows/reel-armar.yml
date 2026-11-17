@@ -31,6 +31,8 @@ jobs:
       FECHA: ${{ inputs.fecha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # para saber quién editó por última vez reel-dia.js
 
       - name: Validar la fecha
         run: '[[ "$FECHA" =~ ^20[0-9]{2}-[01][0-9]-[0-3][0-9]$ ]] || { echo "fecha inválida: $FECHA"; exit 1; }'
@@ -46,11 +48,14 @@ jobs:
 
       - name: Bajar el material del día
         run: |
-          mkdir -p "reels/$FECHA" datos
-          gh release download "reel-$FECHA" --dir "reels/$FECHA" --clobber \
-            --pattern locucion.mp3 --pattern ahora.txt --pattern guion.md --pattern guion.json --pattern 'parana.json' --pattern 'estado.json' --pattern 'serie.json'
-          for f in parana estado serie; do if [ -f "reels/$FECHA/$f.json" ]; then mv "reels/$FECHA/$f.json" datos/; fi; done
-          test -f "reels/$FECHA/guion.json" || { echo "falta guion.json en la release: corré reel-preparar"; exit 1; }
+          # en una carpeta aparte, para no ensuciar los archivos versionados de reels/
+          mkdir -p material datos "reels/$FECHA"
+          gh release download "reel-$FECHA" --dir material --clobber --pattern locucion.mp3 --pattern ahora.txt \
+            --pattern guion.json --pattern parana.json --pattern estado.json --pattern serie.json
+          test -f material/guion.json || { echo "::error::falta guion.json en la release: corré reel-preparar"; exit 1; }
+          test -f material/locucion.mp3 || { echo "::error::falta locucion.mp3: corré scripts/reel/subir-voz.sh"; exit 1; }
+          cp material/locucion.mp3 material/ahora.txt material/guion.json "reels/$FECHA/"
+          for f in parana estado serie; do if [ -f "material/$f.json" ]; then cp "material/$f.json" datos/; fi; done
 
       - name: Modelo de transcripción en caché
         uses: actions/cache@v4
@@ -80,9 +85,19 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "reels/$FECHA/reel-dia.js"
+          J="reels/$FECHA/reel-dia.js"
+          AUTOR=$(git log -1 --format=%an -- "$J")
+          if [ -n "$AUTOR" ] && [ "$AUTOR" != "github-actions[bot]" ]; then
+            echo "reel-dia.js del día ya fue editado a mano ($AUTOR): no lo piso"; exit 0
+          fi
+          git add "$J"
           git commit -m "docs: tiempos del reel del $FECHA" || exit 0
-          for i in 1 2 3; do git pull --rebase && git push && break; echo "push rechazado, reintento"; sleep 5; done
+          subido=no
+          for i in 1 2 3; do
+            if git pull --rebase --autostash && git push; then subido=si; break; fi
+            echo "push rechazado, reintento"; sleep 5
+          done
+          [ "$subido" = si ] || { echo "::error::no pude subir el commit"; exit 1; }
 
       - name: Avisar en el issue del día
         run: |

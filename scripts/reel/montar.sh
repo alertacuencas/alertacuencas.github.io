@@ -1,7 +1,7 @@
 #!/bin/bash
 # Arma el reel final a partir de la toma cruda y la locución.
 #   montar.sh <toma.mp4> <locucion.mp3> <salida.mp4> <ffmpeg>
-# - Recorta desde 0,35 s después del fin del negro inicial y congela ese cuadro 0,35 s
+# - Recorta desde 0,35 s después del fin de la pantalla negra del reel y congela ese cuadro 0,35 s
 #   (así no arranca en negro y el audio queda sincronizado).
 # - Escala a 1080×1920 y suma el audio. Dura lo que la locución + 0,8 s de placa final.
 # - Falla si quedó algún cuadro negro.
@@ -10,8 +10,10 @@ export LC_ALL=C  # decimales con punto (awk en castellano usa coma)
 TOMA="$1"; AUDIO="$2"; SALIDA="$3"; FF="$4"
 CORTE=0.35
 
-FIN_NEGRO=$("$FF" -hide_banner -i "$TOMA" -vf blackdetect=d=0.5:pix_th=0.05 -an -f null - 2>&1 \
-  | { grep -o "black_end:[0-9.]*" || true; } | head -1 | cut -d: -f2)
+# La pantalla negra del reel dura 4 s: se toma el final del último tramo negro de 2,5 s o más
+# (en el servidor, antes de que abra el navegador, la pantalla virtual también está en negro).
+FIN_NEGRO=$("$FF" -hide_banner -i "$TOMA" -vf blackdetect=d=2.5:pix_th=0.05 -an -f null - 2>&1 \
+  | { grep -o "black_end:[0-9.]*" || true; } | tail -1 | cut -d: -f2)
 if [ -z "$FIN_NEGRO" ]; then echo "no encontré el negro inicial en $TOMA" >&2; exit 1; fi
 LARGO_TOMA=$({ "$FF" -hide_banner -i "$TOMA" 2>&1 || true; } | grep -o "Duration: [0-9:.]*" | cut -d' ' -f2 \
   | awk -F: '{ print $1*3600 + $2*60 + $3 }')

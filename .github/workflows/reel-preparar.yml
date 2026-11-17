@@ -108,7 +108,12 @@ jobs:
           fi
           git add "$G"
           git commit -m "docs: guion del reel del ${{ steps.dia.outputs.fecha }}" || exit 0
-          for i in 1 2 3; do git pull --rebase && git push && break; echo "push rechazado, reintento"; sleep 5; done
+          subido=no
+          for i in 1 2 3; do
+            if git pull --rebase --autostash && git push; then subido=si; break; fi
+            echo "push rechazado, reintento"; sleep 5
+          done
+          [ "$subido" = si ] || { echo "::error::no pude subir el commit"; exit 1; }
 
       - name: Avisar con un issue
         if: steps.previo.outputs.seguir == 'si'

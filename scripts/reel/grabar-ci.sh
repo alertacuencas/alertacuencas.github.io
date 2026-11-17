@@ -39,6 +39,7 @@ sleep 0.5
 LOG_NAVEGADOR="$(mktemp)"
 DISPLAY="$PANTALLA" google-chrome --user-data-dir="$(mktemp -d)" --no-first-run --no-default-browser-check \
   --no-sandbox --disable-dev-shm-usage --disable-gpu --hide-scrollbars --force-device-scale-factor=3 \
+  --lang=es-AR --accept-lang=es-AR --disable-features=Translate,TranslateUI \
   --window-position=0,0 --window-size=360,640 --app=http://127.0.0.1:8791/ >"$LOG_NAVEGADOR" 2>&1 &
 NAVEGADOR=$!
 wait $GRABACION
