@@ -1,0 +1,142 @@
+# Reel diario, paso 1: a la mañana consulta las fuentes (sin depender del monitor), arma el
+# guion, el texto para ElevenLabs, el posteo y la portada, y avisa con un issue.
+# Todo queda en la release "reel-AAAA-MM-DD"; el guion además se guarda en reels/AAAA-MM-DD/.
+# Después: generar la voz y correr scripts/reel/subir-voz.sh (ver reels/README.md).
+name: reel-preparar
+
+on:
+  schedule:
+    - cron: "30 12 * * *"   # 09:30 hora argentina
+  workflow_dispatch:
+    inputs:
+      rehacer:
+        description: "Rehacer aunque ya se haya subido la voz (habrá que generarla de nuevo)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: reel
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash  # con -eo pipefail: un paso falla si falla cualquier comando de una tubería
+
+jobs:
+  preparar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # para saber quién editó por última vez el guion del día
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: uv sync --frozen --no-dev
+
+      - name: ¿Ya está la voz de hoy?
+        id: previo
+        run: |
+          FECHA=$(TZ=America/Argentina/Buenos_Aires date +%F)
+          echo "fecha=$FECHA" >> "$GITHUB_OUTPUT"
+          if gh release view "reel-$FECHA" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx locucion.mp3 \
+             && [ "${{ inputs.rehacer }}" != "true" ]; then
+            echo "La voz de hoy ya está subida: no rehago el guion para no desfasarlo del audio." >> "$GITHUB_STEP_SUMMARY"
+            echo "seguir=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "seguir=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Recuperar base de datos
+        if: steps.previo.outputs.seguir == 'si'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/alertas.sqlite
+            data/publicaciones.json
+          key: alertas-db-${{ github.run_id }}
+          restore-keys: alertas-db-
+
+      - name: Consultar fuentes
+        if: steps.previo.outputs.seguir == 'si'
+        run: uv run --no-dev python -m alertas.cli poll
+
+      - name: Armar guion, posteo y portada
+        if: steps.previo.outputs.seguir == 'si'
+        id: dia
+        env:
+          FECHA: ${{ steps.previo.outputs.fecha }}
+        run: |
+          DIA="reels/$FECHA"
+          uv run --no-dev python -m alertas.reel preparar --datos web/data --dia "$DIA"
+          echo "dia=$DIA" >> "$GITHUB_OUTPUT"
+          echo "fecha=$FECHA" >> "$GITHUB_OUTPUT"
+          for f in parana estado serie; do
+            if [ -f "web/data/$f.json" ]; then cp "web/data/$f.json" "$DIA/"; else echo "::warning::falta $f.json (fuente caída)"; fi
+          done
+
+      - name: Guardar todo en la release del día
+        if: steps.previo.outputs.seguir == 'si'
+        run: |
+          TAG="reel-${{ steps.dia.outputs.fecha }}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --prerelease --title "Reel ${{ steps.dia.outputs.fecha }}" \
+              --notes "Material del reel diario. Ver reels/${{ steps.dia.outputs.fecha }}/guion.md."
+          D="${{ steps.dia.outputs.dia }}"
+          gh release upload "$TAG" --clobber "$D"/guion.md "$D"/guion.json "$D"/texto-voz.txt "$D"/posteo.txt \
+            "$D"/portada.png "$D"/ahora.txt $(ls "$D"/parana.json "$D"/estado.json "$D"/serie.json 2>/dev/null || true)
+
+      - name: Guardar el guion en el repo
+        if: steps.previo.outputs.seguir == 'si'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          G="${{ steps.dia.outputs.dia }}/guion.md"
+          AUTOR=$(git log -1 --format=%an -- "$G")
+          if [ -n "$AUTOR" ] && [ "$AUTOR" != "github-actions[bot]" ]; then
+            echo "el guion del día ya fue editado a mano ($AUTOR): no lo piso"; git checkout -- "$G"; exit 0
+          fi
+          git add "$G"
+          git commit -m "docs: guion del reel del ${{ steps.dia.outputs.fecha }}" || exit 0
+          for i in 1 2 3; do git pull --rebase && git push && break; echo "push rechazado, reintento"; sleep 5; done
+
+      - name: Avisar con un issue
+        if: steps.previo.outputs.seguir == 'si'
+        run: |
+          D="${{ steps.dia.outputs.dia }}"; F="${{ steps.dia.outputs.fecha }}"
+          {
+            echo "## 1. Texto para ElevenLabs"
+            echo
+            echo "Julieta - Argentine Warm & Friendly · **Eleven v4** · estabilidad **50 %** · similitud **75 %** · \"Etiquetar automáticamente\" **apagado**."
+            echo
+            echo '```'
+            cat "$D/texto-voz.txt"
+            echo '```'
+            echo
+            echo "## 2. Subir la voz"
+            echo
+            echo 'Descargá el mp3 y corré `scripts/reel/subir-voz.sh` desde el repo.'
+            echo
+            echo "## Para revisar"
+            echo
+            sed -n '/^## Para revisar antes de grabar/,/^## Texto para ElevenLabs/p' "$D/guion.md" | sed '1d;$d'
+            echo "## Texto del posteo"
+            echo
+            sed 's/^/> /' "$D/posteo.txt"
+            echo
+            echo "Portada y datos: release [reel-$F](https://github.com/${{ github.repository }}/releases/tag/reel-$F)."
+          } > cuerpo.md
+          gh label create reel --color 7fd3ff --description "Reel diario de Instagram" --force >/dev/null
+          TITULO="Reel del $(date -d "$F" +%d/%m)"
+          N=$(gh issue list --label reel --state open --search "in:title \"$TITULO\"" --json number --jq '.[0].number // empty')
+          if [ -n "$N" ]; then gh issue edit "$N" --body-file cuerpo.md; else gh issue create --title "$TITULO" --label reel --body-file cuerpo.md; fi

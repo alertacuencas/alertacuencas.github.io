@@ -75,7 +75,8 @@ def _marco(numero: int, total: int, ahora: datetime) -> tuple[Image.Image, Image
         d.rectangle([MARGEN, 30 + i * 8, MARGEN + 14, 33 + i * 8], fill=CARTEL_TEXTO)
     d.rectangle([MARGEN, 66, MARGEN + 14, 82], fill=AGUA)
     d.text((MARGEN + 34, 32), "ALERTA CUENCAS", font=_archivo(40, 800, 80), fill=CARTEL_TEXTO)
-    d.text((ANCHO - MARGEN, 42), f"{CUENTA}  {numero}/{total}", font=_mono(26), fill=CARTEL_TEXTO, anchor="ra")
+    cuenta = f"{CUENTA}  {numero}/{total}" if total > 1 else CUENTA
+    d.text((ANCHO - MARGEN, 42), cuenta, font=_mono(26), fill=CARTEL_TEXTO, anchor="ra")
     d.line([MARGEN, ALTO - 140, ANCHO - MARGEN, ALTO - 140], fill=LINEA, width=2)
     d.text((MARGEN, ALTO - 118), "No es un sistema oficial. Emergencias: Defensa Civil (103).",
            font=_archivo(28, 600, 100), fill=CARBON_SUAVE)
@@ -104,6 +105,26 @@ def portada(r: Resumen, ahora: datetime) -> Image.Image:
         ("Tormentas · AMBA", r.lluvia_nivel, SMN_TXT.get(r.lluvia_nivel, "sin datos")),
     ))
     return img
+
+
+def portada_reel(titular: str, nivel_parana: str, costa_nivel: str, ahora: datetime) -> Image.Image:
+    """Portada del reel (1080×1920): la portada del carrusel, sin contador, centrada.
+
+    La grilla del perfil recorta los costados de arriba y abajo, así que lo importante
+    queda en la franja central de 1080×1350.
+    """
+    img, d = _marco(1, 1, ahora)
+    y = _etiqueta(d, (MARGEN, 180), f"Hoy · {fecha_larga(ahora)}") + 50
+    d.rectangle([0, y, 22, y + 560], fill=COLOR.get(nivel_parana, COLOR["sin"]))
+    tam = 96 if len(titular) < 110 else 80
+    _parrafo(d, (MARGEN, y), titular, _archivo(tam, 800, 82), ANCHO - 2 * MARGEN, interlinea=1.05)
+    _estados(d, ALTO - 300, (
+        ("Río Paraná", nivel_parana, NIVEL_TXT.get(nivel_parana, "sin datos")),
+        ("Buenos Aires y el Delta", costa_nivel, NIVEL_TXT.get(costa_nivel, "sin datos")),
+    ))
+    lienzo = Image.new("RGB", (ANCHO, 1920), CARTEL)
+    lienzo.paste(img, (0, (1920 - ALTO) // 2))
+    return lienzo
 
 
 def _estados(d: ImageDraw.ImageDraw, y: int, filas: tuple) -> None:

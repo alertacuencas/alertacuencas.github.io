@@ -27,3 +27,5 @@ reels/*/*.wav
 reels/*/*.pcm
 reels/*/*.png
 reels/*/trabajo/
+reels/*/*.json
+reels/*/*.txt

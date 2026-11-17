@@ -33,16 +33,27 @@ su boceto y sus archivos.
 Los tiempos de cada paso están en `PASOS`, en [`scripts/reel/reel.js`](../scripts/reel/reel.js).
 Si la locución nueva dura distinto, hay que ajustar esos tiempos y, si cambia, la ciudad de ejemplo.
 
-## Cómo se arma cada día
+## Cómo se arma cada día (automático, salvo la voz)
 
-1. Crear `reels/AAAA-MM-DD/` copiando el `guion.md` del día anterior.
-2. Bajar los datos del día (`data/parana.json` de la web publicada) y escribir el guion con
-   esos números. Elegir la ciudad de ejemplo: conviene la más poblada entre las más graves.
-3. Generar la locución con Julieta en ElevenLabs y guardarla como `locucion.mp3` en la carpeta del día.
-4. Transcribir el audio con tiempos y pasarlos a la tabla del `guion.md`. Ajustar `PASOS` en `reel.js`.
-5. Grabar, recortar y sumar el audio: [`scripts/reel/README.md`](../scripts/reel/README.md).
-6. Exportar `reel.mp4` en la carpeta del día, revisarlo y subirlo. Anotar en el `guion.md`
-   cuándo se publicó y el texto del posteo.
+1. **09:30, solo** ([`reel-preparar`](../.github/workflows/reel-preparar.yml)): consulta las
+   fuentes en el momento (no depende del monitor), arma el guion con
+   [`alertas/reel/`](../alertas/reel/), el texto para ElevenLabs, el posteo y la portada, los
+   sube a la release `reel-AAAA-MM-DD`, guarda `reels/AAAA-MM-DD/guion.md` y abre un **issue
+   "Reel del DD/MM"** con el texto listo para copiar y lo que haya que revisar (por ejemplo,
+   si la lectura del Paraná todavía es la de ayer).
+2. **Vos, unos 2 minutos:** pegás el texto en ElevenLabs con Julieta (Eleven v4, 50 %, 75 %,
+   etiquetado apagado), descargás el mp3 y corrés `scripts/reel/subir-voz.sh` desde el repo.
+3. **Solo** ([`reel-armar`](../.github/workflows/reel-armar.yml)): transcribe la voz, calcula
+   los tiempos (`reel-dia.js`), graba la web en una pantalla virtual, monta el video sin negro
+   y deja `reel.mp4` en la release, con un comentario en el issue para revisarlo.
+4. **Publicar:** por ahora a mano desde Chrome (video en 9:16, portada propia, texto del
+   posteo y etiqueta de IA). Con el token de la API de Instagram se puede automatizar.
+
+Para rehacer un día (por ejemplo, si llegó la lectura nueva del INA): correr `reel-preparar`
+desde Actions → "Run workflow". Si el `guion.md` del día se editó a mano, no se pisa.
+El bot hace commits en `main` todos los días: hacé `git pull` antes de trabajar.
+
+Probar en la PC: `uv run python -m alertas.reel preparar --datos web/data --dia /tmp/prueba`.
 
 ## Reglas aprendidas (no repetir errores)
 
@@ -63,6 +74,12 @@ Si la locución nueva dura distinto, hay que ajustar esos tiempos y, si cambia, 
   del día anterior, con datos viejos) y no usar la pantalla durante la toma.
 - **Lo que cambia cada día** va en `reels/AAAA-MM-DD/reel-dia.js` (ciudad, subtítulos y
   tiempos sacados de la transcripción del audio). `scripts/reel/reel.js` no se toca.
+- **Subtítulos y franja en la zona segura:** Instagram tapa unos 400 px abajo y 220 px
+  arriba. Los subtítulos van a 405 px del borde de abajo y la franja con la dirección,
+  debajo del encabezado de la web.
+- **El guion lo arma el código** ([`alertas/reel/guion.py`](../alertas/reel/guion.py)): la
+  ciudad de ejemplo es la que más pasó el nivel de evacuación (o la más cerca, si no hay
+  ninguna), y las alertas del SMN vencidas no se mencionan.
 - **Publicar con la etiqueta de IA**, porque la voz es de ElevenLabs.
 
 ## Qué va en git

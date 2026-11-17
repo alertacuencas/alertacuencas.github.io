@@ -1,0 +1,27 @@
+#!/bin/bash
+# Arma el reel final a partir de la toma cruda y la locución.
+#   montar.sh <toma.mp4> <locucion.mp3> <salida.mp4> <ffmpeg>
+# - Recorta desde 0,35 s después del fin del negro inicial y congela ese cuadro 0,35 s
+#   (así no arranca en negro y el audio queda sincronizado).
+# - Escala a 1080×1920 y suma el audio. Dura lo que la locución + 0,8 s de placa final.
+# - Falla si quedó algún cuadro negro.
+set -euo pipefail
+export LC_ALL=C  # decimales con punto (awk en castellano usa coma)
+TOMA="$1"; AUDIO="$2"; SALIDA="$3"; FF="$4"
+CORTE=0.35
+
+FIN_NEGRO=$("$FF" -hide_banner -i "$TOMA" -vf blackdetect=d=0.5:pix_th=0.05 -an -f null - 2>&1 \
+  | { grep -o "black_end:[0-9.]*" || true; } | head -1 | cut -d: -f2)
+if [ -z "$FIN_NEGRO" ]; then echo "no encontré el negro inicial en $TOMA" >&2; exit 1; fi
+DURACION=$({ "$FF" -hide_banner -i "$AUDIO" 2>&1 || true; } | grep -o "Duration: [0-9:.]*" | cut -d' ' -f2 \
+  | awk -F: '{ print $1*3600 + $2*60 + $3 + 0.8 }')
+DESDE=$(awk -v a="$FIN_NEGRO" -v c="$CORTE" 'BEGIN { print a + c }')
+
+"$FF" -loglevel error -y -ss "$DESDE" -i "$TOMA" -i "$AUDIO" -t "$DURACION" -map 0:v -map 1:a \
+  -vf "scale=1080:1920:flags=lanczos,fps=30,tpad=start_duration=$CORTE:start_mode=clone" -af apad \
+  -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -profile:v high \
+  -c:a aac -b:a 160k -movflags +faststart "$SALIDA"
+
+NEGROS=$("$FF" -hide_banner -i "$SALIDA" -vf blackdetect=d=0.05:pix_th=0.1 -an -f null - 2>&1 | grep -c black_start || true)
+if [ "$NEGROS" != "0" ]; then echo "quedaron $NEGROS tramos negros en $SALIDA" >&2; exit 1; fi
+echo "listo: $SALIDA (${DURACION} s, fin del negro en la toma: ${FIN_NEGRO} s)"

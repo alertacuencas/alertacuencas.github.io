@@ -23,7 +23,7 @@ sección 0 de [`diseno-fase1.md`](diseno-fase1.md), que manda si algo se contrad
 | Web en cuatro pasos: hoy, tu lugar, el río y avisar | web | `9cb6e4b` |
 | Publicaciones para Instagram en modo prueba | `/publicaciones.html` | `5ae3465` |
 | Contacto por mensaje directo de Instagram | web | `cd90cb2` |
-| Reel diario | [`reels/`](../reels/README.md) | 16/11/2026 |
+| Reel diario: guion, portada, grabación y montaje automáticos (la voz es manual) | [`reels/`](../reels/README.md), `alertas/reel/` | 16/11/2026, automatizado el 17/11 |
 
 ## Pendientes e ideas
 
@@ -34,6 +34,9 @@ Una fila por función. El estado puede ser idea, diseño, en curso o hecha.
 | Paso 4 "Avisar" | Que la gente reciba el aviso | idea | Hoy dice "próximamente". Por WhatsApp a través de referentes (Fase 2) |
 | Avisos de sudestada en modo prueba | Fase 1 | diseño | Bloqueado: hay que confirmar el datum con el SHN |
 | Lluvia medida en tiempo real en CABA | Tablero | idea | Falta una fuente |
+| Monitor cada 10 minutos de verdad | Que la web no muestre datos viejos | idea | GitHub corre el cron cuando quiere (el 17/11: 2 corridas en 16 h). Opción: disparar el workflow desde un cron externo gratuito |
+| Publicar el reel por la API de Instagram | Que el reel salga con un clic de aprobación | idea | Falta `IG_ACCESS_TOKEN` (app de Meta + usuario del sistema). El video ya queda en una URL pública (release) |
+| Voz del reel por API | Reel 100 % automático | descartada por ahora | El plan gratis de ElevenLabs no permite voces de la biblioteca por API |
 
 ## Ficha para una función nueva
 
