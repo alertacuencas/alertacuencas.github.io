@@ -28,7 +28,7 @@ trap 'kill $SERVIDOR $XVFB 2>/dev/null || true; rm -rf "$SITIO"' EXIT
 sleep 2
 
 DURACION=$({ "$FF" -hide_banner -i "$DIA/locucion.mp3" 2>&1 || true; } | grep -o "Duration: [0-9:.]*" | cut -d' ' -f2 \
-  | awk -F: '{ printf "%d", $1*3600 + $2*60 + $3 + 14 }')  # 4 s de negro + carga + placa final
+  | awk -F: '{ printf "%d", $1*3600 + $2*60 + $3 + 40 }')  # carga lenta en el runner (~15 s) + 4 s de negro + placa final
 
 "$FF" -loglevel error -y -f x11grab -draw_mouse 0 -framerate 30 -video_size 1080x1920 -i "$PANTALLA+0,0" \
   -t "$DURACION" -c:v libx264 -preset ultrafast -crf 16 -pix_fmt yuv420p "$TOMA" &
