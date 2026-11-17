@@ -12,7 +12,7 @@ CORTE=0.35
 
 # La pantalla negra del reel dura 4 s: se toma el final del último tramo negro de 2,5 s o más
 # (en el servidor, antes de que abra el navegador, la pantalla virtual también está en negro).
-FIN_NEGRO=$("$FF" -hide_banner -i "$TOMA" -vf blackdetect=d=2.5:pix_th=0.05 -an -f null - 2>&1 \
+FIN_NEGRO=$("$FF" -hide_banner -i "$TOMA" -vf blackdetect=d=2.5:pix_th=0.05:pic_th=0.9 -an -f null - 2>&1 \
   | { grep -o "black_end:[0-9.]*" || true; } | tail -1 | cut -d: -f2)
 if [ -z "$FIN_NEGRO" ]; then echo "no encontré el negro inicial en $TOMA" >&2; exit 1; fi
 LARGO_TOMA=$({ "$FF" -hide_banner -i "$TOMA" 2>&1 || true; } | grep -o "Duration: [0-9:.]*" | cut -d' ' -f2 \

@@ -37,7 +37,12 @@ sleep 0.5
 # --no-sandbox: en Ubuntu 24.04 (los runners de GitHub) el sandbox de Chrome no arranca por
 # la restricción de AppArmor a los user namespaces. Es un runner descartable y la página es local.
 LOG_NAVEGADOR="$(mktemp)"
-DISPLAY="$PANTALLA" google-chrome --user-data-dir="$(mktemp -d)" --no-first-run --no-default-browser-check \
+PERFIL="$(mktemp -d)"
+# sin la oferta de traducir (el runner está en inglés y la página en castellano)
+mkdir -p "$PERFIL/Default"
+echo '{"translate":{"enabled":false},"intl":{"accept_languages":"es-AR,es"}}' > "$PERFIL/Default/Preferences"
+# --test-type: oculta la barra "unsupported command-line flag" que pone --no-sandbox
+LANGUAGE=es LANG=es_AR.UTF-8 DISPLAY="$PANTALLA" google-chrome --user-data-dir="$PERFIL" --no-first-run --no-default-browser-check --test-type \
   --no-sandbox --disable-dev-shm-usage --disable-gpu --hide-scrollbars --force-device-scale-factor=3 \
   --lang=es-AR --accept-lang=es-AR --disable-features=Translate,TranslateUI \
   --window-position=0,0 --window-size=360,640 --app=http://127.0.0.1:8791/ >"$LOG_NAVEGADOR" 2>&1 &
