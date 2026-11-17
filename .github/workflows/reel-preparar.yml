@@ -129,7 +129,8 @@ jobs:
             echo
             echo "## Para revisar"
             echo
-            sed -n '/^## Para revisar antes de grabar/,/^## Texto para ElevenLabs/p' "$D/guion.md" | sed '1d;$d'
+            jq -r 'if (.avisos | length) == 0 then "- Sin avisos." else (.avisos[] | "- ⚠️ " + .) end' "$D/guion.json"
+            echo
             echo "## Texto del posteo"
             echo
             sed 's/^/> /' "$D/posteo.txt"
