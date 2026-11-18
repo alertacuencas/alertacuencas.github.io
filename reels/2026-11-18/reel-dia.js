@@ -6,7 +6,7 @@ window.REEL = {
     "ciudad": 4.86,
     "rio": 18.72,
     "noOficial": 26.26,
-    "fin": 31.06
+    "fin": 31.04
   },
   "SUBS": [
     [
@@ -36,11 +36,11 @@ window.REEL = {
     ],
     [
       18.72,
-      24.14,
+      24.1,
       "Reconquista, Santa Fe, La Paz, Goya y Esquina también pasaron el nivel de evacuación"
     ],
     [
-      24.14,
+      24.1,
       26.26,
       "Por ahora, el río se mantiene estable"
     ],
@@ -51,8 +51,26 @@ window.REEL = {
     ],
     [
       28.22,
-      31.06,
+      31.04,
       "Ante una emergencia: Defensa Civil, 103"
+    ]
+  ],
+  "FICHAS": [
+    [
+      4.86,
+      "San Javier (Santa Fe)"
+    ],
+    [
+      10.54,
+      "Paraná"
+    ],
+    [
+      13.34,
+      "Hernandarias"
+    ],
+    [
+      15.92,
+      "Diamante"
     ]
   ]
 };
