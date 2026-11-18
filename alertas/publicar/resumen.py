@@ -10,8 +10,9 @@ GRAVEDAD = {"evacuacion": 0, "alerta": 1, "normal": 2}
 SMN_GRAVEDAD = {"rojo": 0, "naranja": 1, "amarillo": 2, "verde": 3}
 SMN_TXT = {"rojo": "alerta roja", "naranja": "alerta naranja", "amarillo": "alerta amarilla", "verde": "sin alertas"}
 NIVEL_TXT = {"evacuacion": "evacuación", "alerta": "alerta", "normal": "normal"}
-RIOS_DELTA = {"PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA"}
+RIOS_DELTA = {"PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA", "IBICUY"}
 MAX_AFECTADOS = 6
+CUENCA_DEFECTO = "Paraná"  # el respaldo del INA solo trae el Paraná y no marca la cuenca
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,47 @@ def _gravedad(p: dict) -> tuple:
     return (p.get("viejo", False), GRAVEDAD.get(p["nivel"], 3), -p["altura"] / p["evacuacion"])
 
 
+def cuenca(p: dict) -> str:
+    return p.get("cuenca") or CUENCA_DEFECTO
+
+
+def por_cuenca(puertos: list[dict]) -> list[tuple[str, list[dict]]]:
+    """Agrupa por río: primero el río del puerto más grave; adentro, del más grave al menos."""
+    grupos: dict[str, list[dict]] = {}
+    for p in sorted(puertos, key=_gravedad):
+        grupos.setdefault(cuenca(p), []).append(p)
+    return list(grupos.items())
+
+
+def _ciudades(n: int) -> str:
+    return f"{n} {'ciudad' if n == 1 else 'ciudades'}"
+
+
+def frase_nivel(puertos: list[dict], nivel: str) -> str:
+    """'El Paraná está en evacuación en 8 ciudades y el Uruguay en 1.' (de lo más grave a lo menos)."""
+    grupos = por_cuenca(puertos)
+    (c0, ps0), resto = grupos[0], grupos[1:]
+    otros = [f"el {c} en {len(ps)}" for c, ps in resto]
+    cola = f", {', '.join(otros[:-1])} y {otros[-1]}" if len(otros) > 1 else f" y {otros[0]}" if otros else ""
+    return f"El {c0} está en {NIVEL_TXT[nivel]} en {_ciudades(len(ps0))}{cola}."
+
+
+def titular_rios(parana: dict | None) -> str:
+    """Lo más grave primero: las ciudades en evacuación y, después, los ríos que solo tienen alerta."""
+    puertos = [p for p in (parana or {}).get("puertos", []) if not p.get("viejo")]
+    evac = [p for p in puertos if p["nivel"] == "evacuacion"]
+    alerta = [p for p in puertos if p["nivel"] == "alerta"]
+    if evac:
+        con_evac = {cuenca(p) for p in evac}
+        solo_alerta = [p for p in alerta if cuenca(p) not in con_evac]
+        return " ".join([frase_nivel(evac, "evacuacion")] + ([frase_nivel(solo_alerta, "alerta")] if solo_alerta else []))
+    if alerta:
+        return frase_nivel(alerta, "alerta")
+    if puertos:
+        return "El Paraná está normal." if {cuenca(p) for p in puertos} == {CUENCA_DEFECTO} else "Los ríos están normales."
+    return ""
+
+
 def _parana(parana: dict | None) -> tuple[str, list[str], list[str], list[dict]]:
     puertos = [p for p in (parana or {}).get("puertos", []) if not p.get("viejo")]
     evac = [p["puerto"] for p in puertos if p["nivel"] == "evacuacion"]
@@ -92,16 +134,12 @@ def _lluvia(estado: dict | None) -> tuple[str, str, list[str], str]:
     return nivel, f"{SMN_TXT[nivel].capitalize()} por {evento} en {enumerar(nombres)}.", fuertes, evento
 
 
-def _titular(nivel: str, evac: list[str], alerta: list[str], costa: str, lluvia: str, evento: str) -> str:
-    partes = []
-    if evac:
-        partes.append(f"El Paraná está en evacuación en {len(evac)} {'ciudad' if len(evac) == 1 else 'ciudades'}.")
-    elif alerta:
-        partes.append(f"El Paraná está en alerta en {len(alerta)} {'puerto' if len(alerta) == 1 else 'puertos'}.")
-    elif nivel == "normal":
-        partes.append("El Paraná está normal.")
-    partes.append("En Buenos Aires y el Delta, el río está tranquilo." if costa in ("normal", "sin")
-                  else "Atención en el Delta.")
+def _titular(rios: str, hay_evac: bool, costa: str, lluvia: str, evento: str) -> str:
+    partes = [rios] if rios else []
+    if costa not in ("normal", "sin"):
+        partes.append("Atención en el Delta.")
+    elif not hay_evac:  # lo más grave primero: con ciudades en evacuación, la costa tranquila no es noticia
+        partes.append("En Buenos Aires y el Delta, el río está tranquilo.")
     if lluvia not in ("verde", "sin"):
         partes.append(f"Hay {SMN_TXT[lluvia]} por {evento} en el AMBA.")
     return " ".join(partes)
@@ -112,7 +150,7 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None) -> Resum
     costa_nivel, costa_frase = _costa(parana, serie)
     lluvia_nivel, lluvia_frase, fuertes, evento = _lluvia(estado)
     return Resumen(
-        titular=_titular(nivel, evac, alerta, costa_nivel, lluvia_nivel, evento), nivel_parana=nivel,
+        titular=_titular(titular_rios(parana), bool(evac), costa_nivel, lluvia_nivel, evento), nivel_parana=nivel,
         evacuacion=evac, alerta=alerta, afectados=afectados, costa_nivel=costa_nivel, costa_frase=costa_frase,
         lluvia_nivel=lluvia_nivel, lluvia_frase=lluvia_frase, zonas_fuertes=fuertes,
     )

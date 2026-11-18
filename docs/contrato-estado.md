@@ -42,6 +42,9 @@ Lo genera `alertas/serie.py` (`armar_serie`) en cada poll y lo dibuja `web/grafi
 
 ## `parana.json` (versión 1)
 
+Pese al nombre, trae todos los ríos de la tabla de Prefectura que tienen niveles de alerta y evacuación
+(campo `cuenca`); el nombre del archivo quedó por compatibilidad.
+
 Lo arma `alertas/fuentes/prefectura.py` en cada poll: Prefectura directo y, si no responde (pasa siempre
 desde GitHub Actions), las mismas escalas vía INA, con una lectura diaria (`via`: `prefectura` · `ina`). Si no responde ninguna no se
 reescribe, y la web sigue mostrando el último publicado (cada puerto trae su hora).
@@ -50,4 +53,4 @@ reescribe, y la web sigue mostrando el último publicado (cada puerto trae su ho
 |---|---|
 | `version`, `generado`, `fuente`, `url` | Metadatos |
 | `evacuacion`, `alerta` | Nombres de los puertos con lectura reciente (menos de 36 h) en cada nivel, de norte a sur |
-| `puertos[]` | `puerto`, `rio`, `altura`, `variacion`, `ts` (UTC), `alerta`, `evacuacion`, `nivel` (`evacuacion` · `alerta` · `normal`), `tendencia` (`sube` · `baja` · `estable` · `sin_dato`), `viejo` |
+| `puertos[]` | `puerto`, `rio`, `altura`, `variacion`, `ts` (UTC), `alerta`, `evacuacion`, `nivel` (`evacuacion` · `alerta` · `normal`), `tendencia` (`sube` · `baja` · `estable` · `sin_dato`), `viejo`, `lat`, `lon` (null si falta la ubicación), `cuenca` (`Paraná` · `Uruguay` · `Paraguay` · `Río de la Plata` · `Iguazú` · `Gualeguay` · `Gualeguaychú`; el Delta cuenta como Paraná; falta en el respaldo del INA, que es solo Paraná) |

@@ -345,3 +345,30 @@ def test_fichas_sin_transcripcion_queda_solo_la_primera():
     gu = g.armar(_siete(), _estado(), None, AHORA)
     t, _ = tiempos.calcular(gu, [("hola", 0.0)], duracion=30.0)
     assert tiempos.fichas(gu, [("hola", 0.0)], t) == [(t["ciudad"], "San Javier (Santa Fe)")]
+
+
+def _rio(cuenca, puerto):
+    return puerto | {"cuenca": cuenca}
+
+
+def test_varios_rios_en_evacuacion_de_lo_mas_grave_a_lo_menos():
+    p = _parana(_evac("Santa Fe", 0.5), _evac("Rosario", 0.2), _rio("Uruguay", _evac("San Javier", 0.9)),
+                _rio("Paraguay", _puerto("Isla del Cerrito", "alerta", 0.3)), _puerto("Goya", "alerta", 0.1))
+    gu = g.armar(p, _estado(), None, AHORA)
+    b = {x.clave: x for x in gu.bloques}
+    assert b["hoy"].voz == "Hoy, tres ciudades están en evacuación: una sobre el Uruguay y dos sobre el Paraná."
+    assert b["ciudad"].voz.startswith("En San Javier, sobre el Uruguay, el agua está")
+    assert gu.fichas == ("San Javier", "Santa Fe", "Rosario")
+    assert b["rio"].voz.endswith("Además, el Paraguay está en alerta."), "el Paraná ya se nombró por su evacuación"
+    assert gu.titular_portada.startswith("El Uruguay está en evacuación en 1 ciudad y el Paraná en 2. "
+                                         "El Paraguay está en alerta en 1 ciudad.")
+    assert "San Javier, sobre el Uruguay (+90 cm)" in gu.posteo
+
+
+def test_solo_alerta_en_otro_rio():
+    p = _parana(_puerto("Santa Fe", "normal"), _rio("Paraguay", _puerto("Isla del Cerrito", "alerta", 0.3)))
+    gu = g.armar(p, _estado(), None, AHORA)
+    b = {x.clave: x for x in gu.bloques}
+    assert b["hoy"].voz == "Hoy, el Paraguay está en alerta en Isla del Cerrito."
+    assert b["ciudad"].voz.startswith("En Isla del Cerrito, sobre el Paraguay,")
+    assert b["rio"].voz == "Acá están todos los ríos, de lo más grave a lo más tranquilo."

@@ -202,6 +202,7 @@ a { color: inherit; }
 .mapa-leyenda span { display: inline-flex; align-items: center; gap: 0.35rem; }
 .mapa-leyenda .pin { display: inline-block; width: 11px; height: 11px; }
 
+.parada-rio { font-weight: 400; color: var(--carbon-suave); font-size: 0.85em; }
 .escalas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
 .grupo-titulo {
   margin: 1.2rem 0 0.2rem; font: 600 0.75rem var(--mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--c);

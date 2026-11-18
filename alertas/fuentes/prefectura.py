@@ -1,12 +1,14 @@
-"""Prefectura Naval Argentina: alturas del río Paraná, puerto por puerto.
+"""Prefectura Naval Argentina: alturas de los ríos del litoral, puerto por puerto.
 
 La página pública de alturas trae, por puerto, la última lectura de la escala, la
 variación, el estado y los niveles de alerta y evacuación que fija Prefectura.
 Se lee cada 2 a 12 h según el puerto (no es telemetría). Las fechas vienen como
 "16/NOV/26 - 1000" en hora argentina.
 
-Solo se toman los puertos del Paraná (incluido el Delta y San Javier, en Santa Fe)
-que tienen niveles de alerta y evacuación: sin umbral no hay con qué comparar.
+Se toman los puertos del Paraná (incluido el Delta y San Javier, en Santa Fe), del
+Uruguay, del Paraguay, del Río de la Plata y de sus afluentes que tienen niveles de alerta
+y evacuación: sin umbral no hay con qué comparar. Cada puerto lleva su "cuenca", el nombre
+del río para mostrar (los brazos del Delta cuentan como Paraná).
 
 Respaldo: la página de Prefectura no responde desde fuera de Argentina (los
 servidores de GitHub Actions están en EE. UU.). Si falla, se usan las mismas
@@ -24,7 +26,13 @@ from alertas.http import pedir
 from alertas.tiempo import ART, a_utc, iso_utc
 
 URL = "https://contenidosweb.prefecturanaval.gob.ar/alturas/"
-RIOS = frozenset({"PARANA", "DELTA PARANA", "SAN JAVIER"})
+# Río de la tabla de Prefectura → cuenca, como se nombra en la web y en el reel.
+CUENCAS = {
+    "PARANA": "Paraná", "DELTA PARANA": "Paraná", "SAN JAVIER": "Paraná", "IBICUY": "Paraná",
+    "URUGUAY": "Uruguay", "PARAGUAY": "Paraguay", "DE LA PLATA": "Río de la Plata",
+    "IGUAZU": "Iguazú", "GUALEGUAY": "Gualeguay", "GUALEGUAYCHU": "Gualeguaychú",
+}
+RIOS = frozenset(CUENCAS)
 ALTURA_MIN_M = -5.0
 ALTURA_MAX_M = 30.0  # escalas del Paraná medio llegan a ~10 m; más que esto es un error
 # El INA publica la lectura de las 00 h cerca del mediodía: hasta ~36 h de atraso es normal.
@@ -92,7 +100,46 @@ COORDS = {
     "SAN FERNANDO": (-34.4333, -58.55),
     "SAN ISIDRO": (-34.4572, -58.5072),
     "OLIVOS": (-34.5067, -58.4759),
+    # Otros ríos (catálogo del INA, salvo los marcados)
+    "ANDRESITO": (-25.5833, -53.9833),
+    "PUERTO RUIZ": (-33.2167, -59.3667),
+    "PILCOMAYO": (-25.3667, -57.65),
+    "BOUVIER": (-25.4519, -57.5682),
+    "FORMOSA": (-26.1833, -58.1833),
+    "BERMEJO": (-26.9263, -58.5062),
+    "LAS PALMAS": (-27.0667, -58.6833),  # Las Palmas (Chaco), no está en el catálogo del INA
+    "ISLA DEL CERRITO": (-27.3167, -58.6167),
+    "EL SOBERBIO": (-27.3, -54.2),
+    "ALBA POSSE": (-27.572, -54.6785),
+    "PANAMBI": (-27.7306, -54.9131),
+    "SAN JAVIER": (-27.8833, -55.1333),  # sobre el Uruguay, en Misiones
+    "PUERTO CONCEPCION": (-28.1192, -55.5814),
+    "GARRUCHOS": (-28.1833, -55.65),
+    "SANTO TOME": (-28.55, -56.0333),
+    "ALVEAR": (-29.1, -56.55),
+    "LA CRUZ": (-29.1806, -56.634),
+    "YAPEYU": (-29.47, -56.8107),
+    "PASO DE LOS LIBRES": (-29.7167, -57.0833),
+    "BOMPLAND": (-29.8727, -57.3329),
+    "MONTE CASEROS": (-30.25, -57.6333),
+    "MOCORETA": (-30.7157, -57.8178),
+    "FEDERACION": (-30.9932, -57.9147),
+    "SALTO GRANDE ABAJO": (-31.2755, -57.9369),
+    "CONCORDIA": (-31.4, -58.0167),
+    "YERUA": (-31.53, -58.02),  # Puerto Yeruá, no está en el catálogo del INA
+    "COLON": (-32.2333, -58.1167),
+    "CONCEPCION DEL URUGUAY": (-32.4833, -58.2333),
+    "CAMPICHUELO": (-32.701, -58.1834),
+    "GUALEGUAYCHU": (-33.0167, -58.5),
+    "BOCA GUALEGUAYCHU": (-33.0667, -58.4167),
+    "PARANACITO": (-33.72, -58.66),  # Villa Paranacito, no está en el catálogo del INA
+    "BUENOS AIRES": (-34.5611, -58.3993),
+    "LA PLATA": (-34.8242, -57.8735),
+    "ATALAYA": (-35.03, -57.53),  # Magdalena, no está en el catálogo del INA
+    "SANTA TERESITA": (-36.54, -56.69),  # no está en el catálogo del INA
 }
+# Sin ubicación confiable todavía: aparecen en la lista pero no en el mapa.
+SIN_UBICACION = frozenset({"LA CALERA", "BRAGA"})
 # Orden de la tabla de Prefectura, aguas abajo. En Misiones y Corrientes el río corre de
 # este a oeste, así que ordenar por latitud mezclaría los puertos.
 ORDEN_RIO = (
@@ -113,6 +160,10 @@ NOMBRES = {
     "SAN NICOLAS": "San Nicolás", "VILLA CONSTITUCION": "Villa Constitución", "ZARATE": "Zárate",
     "DIQUE LUJAN": "Dique Luján", "CHANA MINI": "Chaná Miní", "MARTIN GARCIA": "Martín García",
     "GUAZUCITO": "Guazucito", "PUERTO MANI": "Puerto Maní",
+    "IGUAZU": "Iguazú", "PANAMBI": "Panambí", "PUERTO CONCEPCION": "Puerto Concepción",
+    "SANTO TOME": "Santo Tomé", "YAPEYU": "Yapeyú", "MOCORETA": "Mocoretá", "FEDERACION": "Federación",
+    "YERUA": "Yeruá", "COLON": "Colón", "CONCEPCION DEL URUGUAY": "Concepción del Uruguay",
+    "GUALEGUAYCHU": "Gualeguaychú", "BOCA GUALEGUAYCHU": "Boca Gualeguaychú",
 }
 
 
@@ -130,6 +181,7 @@ class Puerto:
     viejo: bool
     lat: float | None = None
     lon: float | None = None
+    cuenca: str = "Paraná"
 
 
 class _Tabla(HTMLParser):
@@ -227,11 +279,12 @@ def _puerto(fila: dict[str, str], ahora: datetime) -> Puerto | None:
         alerta=alerta, evacuacion=evacuacion, nivel=_nivel(altura, alerta, evacuacion),
         tendencia=_tendencia(variacion), viejo=ahora - ts > DATO_VIEJO,
         lat=COORDS.get(nombre_crudo, (None, None))[0], lon=COORDS.get(nombre_crudo, (None, None))[1],
+        cuenca=CUENCAS[rio],
     )
 
 
 def parse(html: str, ahora: datetime) -> list[Puerto]:
-    """Puertos del Paraná en el orden de la tabla (de aguas arriba hacia el Delta)."""
+    """Puertos en el orden de la tabla: cada río de aguas arriba hacia abajo."""
     tabla = _Tabla()
     tabla.feed(html)
     return [p for fila in tabla.filas if (p := _puerto(fila, ahora)) is not None]

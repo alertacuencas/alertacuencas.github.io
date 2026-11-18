@@ -41,8 +41,8 @@ def test_resumen_con_evacuacion_alerta_y_tormentas():
                 _puerto("Zárate", "normal", rio="PARANADELASPALMAS"), _puerto("Viejo", "evacuacion", viejo=True)),
         _estado(medrano="amarillo", lujan="verde"), SERIE)
 
-    assert r.titular == ("El Paraná está en evacuación en 2 ciudades. En Buenos Aires y el Delta, "
-                         "el río está tranquilo. Hay alerta amarilla por tormentas en el AMBA.")
+    assert r.titular == ("El Paraná está en evacuación en 2 ciudades. "
+                         "Hay alerta amarilla por tormentas en el AMBA."), "con evacuación, la costa tranquila no va"
     assert r.evacuacion == ["Goya", "Santa Fe"], "las lecturas viejas no cuentan"
     assert [p["puerto"] for p in r.afectados][:3] == ["Goya", "Santa Fe", "Rosario"]
     assert "15 cm más alta" in r.costa_frase and "Ninguna escala del Delta" in r.costa_frase
@@ -184,3 +184,29 @@ def test_procesar_con_memoria_corrupta_arranca_de_cero(tmp_path):
     memoria.write_text("{no es json")
     d = publicar.procesar(None, None, None, memoria, tmp_path / "pub", AHORA)
     assert d.motivo == "diario"
+
+
+def _en(cuenca, nombre, nivel, **kw):
+    return _puerto(nombre, nivel, **kw) | {"cuenca": cuenca}
+
+
+def test_titular_nombra_cada_rio_de_lo_mas_grave_a_lo_menos():
+    p = _parana(_en("Uruguay", "Concordia", "evacuacion"),
+                _en("Paraná", "Santa Fe", "evacuacion", alerta=4.6, evac=5.0),
+                _en("Paraná", "Rosario", "evacuacion", altura=5.8),
+                _en("Paraguay", "Isla del Cerrito", "alerta", altura=5.5),
+                _en("Paraná", "Goya", "alerta", altura=5.5))
+    assert resumen.titular_rios(p) == ("El Paraná está en evacuación en 2 ciudades y el Uruguay en 1. "
+                                       "El Paraguay está en alerta en 1 ciudad.")
+
+
+def test_titular_solo_alertas_en_varios_rios():
+    p = _parana(_en("Paraguay", "Isla del Cerrito", "alerta", alerta=4.9, evac=5.0),
+                _en("Paraná", "Goya", "alerta", altura=5.4), _en("Paraná", "Esquina", "alerta", altura=5.4),
+                _en("Uruguay", "Colón", "normal"))
+    assert resumen.titular_rios(p) == "El Paraguay está en alerta en 1 ciudad y el Paraná en 2."
+
+
+def test_titular_sin_cuenca_es_el_parana_del_respaldo_ina():
+    assert resumen.titular_rios(_parana(_puerto("Rosario", "normal"))) == "El Paraná está normal."
+    assert resumen.titular_rios(_parana(_en("Uruguay", "Colón", "normal"), _puerto("Rosario", "normal"))) == "Los ríos están normales."

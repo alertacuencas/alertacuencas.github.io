@@ -12,7 +12,7 @@ const GRAVEDAD = { evacuacion: 0, alerta: 1, normal: 2 };
 const SMN_GRAVEDAD = { rojo: 0, naranja: 1, amarillo: 2, verde: 3 };
 const SMN_TXT = { rojo: "Alerta roja", naranja: "Alerta naranja", amarillo: "Alerta amarilla", verde: "Sin alertas" };
 const NIVEL_TXT = { evacuacion: "Evacuación", alerta: "Alerta", normal: "Normal" };
-const RIOS_DELTA = new Set(["PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA"]);
+const RIOS_DELTA = new Set(["PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA", "IBICUY"]);
 const ATAJOS = ["Santa Fe", "Paraná", "Rosario", "Corrientes", "Costa y Delta", "Matanza-Riachuelo"];
 const NORMALES_VISIBLES = 5;
 const TZ = "America/Argentina/Buenos_Aires";
@@ -135,6 +135,37 @@ function resumenLluvia() {
   return { zonas, conAlerta, nivel: conAlerta[0]?.nivel_smn ?? (zonas.length ? "verde" : "sin") };
 }
 
+// Ríos: misma regla que alertas/publicar/resumen.py (titular_rios). Lo más grave primero.
+const CUENCA_DEFECTO = "Paraná"; // el respaldo del INA solo trae el Paraná y no marca la cuenca
+const cuenca = (p) => p.cuenca || CUENCA_DEFECTO;
+const conRio = (p) => (cuenca(p) === CUENCA_DEFECTO ? p.puerto : `${p.puerto} (${cuenca(p)})`);
+function porCuenca(ps) {
+  const grupos = new Map();
+  for (const p of [...ps].sort(porGravedad)) {
+    if (!grupos.has(cuenca(p))) grupos.set(cuenca(p), []);
+    grupos.get(cuenca(p)).push(p);
+  }
+  return [...grupos];
+}
+const ciudades = (n) => `${n} ${n === 1 ? "ciudad" : "ciudades"}`;
+// "El Paraná está en <em>evacuación</em> en 8 ciudades y el Uruguay en 1."
+function fraseNivel(ps, nivel) {
+  const [[c0, ps0], ...resto] = porCuenca(ps);
+  const otros = resto.map(([c, x]) => `el ${c} en ${x.length}`);
+  const fin = otros.length > 1 ? `, ${otros.slice(0, -1).join(", ")} y ${otros.at(-1)}` : otros.length ? ` y ${otros[0]}` : "";
+  return [`El ${c0} está en `, el("em", { textContent: NIVEL_TXT[nivel].toLowerCase() }), ` en ${ciudades(ps0.length)}${fin}. `];
+}
+function titularRios(P) {
+  if (P.evac.length) {
+    const conEvac = new Set(P.evac.map(cuenca));
+    const soloAlerta = P.alerta.filter((p) => !conEvac.has(cuenca(p)));
+    return [...fraseNivel(P.evac, "evacuacion"), ...(soloAlerta.length ? fraseNivel(soloAlerta, "alerta") : [])];
+  }
+  if (P.alerta.length) return fraseNivel(P.alerta, "alerta");
+  if (P.ps.length) return [P.ps.every((p) => cuenca(p) === CUENCA_DEFECTO) ? "El Paraná está normal. " : "Los ríos están normales. "];
+  return [];
+}
+
 function pintarHoy() {
   const P = resumenParana(), C = resumenCosta(), L = resumenLluvia();
   document.getElementById("hoy-fecha").textContent = fmtDia.format(new Date());
@@ -143,18 +174,13 @@ function pintarHoy() {
   // Titular: una sola oración que se entiende sin leer nada más.
   const t = document.getElementById("t-hoy");
   t.replaceChildren();
-  if (P.evac.length) {
-    t.append("El Paraná está en ", el("em", { textContent: "evacuación" }),
-      ` en ${P.evac.length} ${P.evac.length === 1 ? "ciudad" : "ciudades"}. `);
-  } else if (P.alerta.length) {
-    t.append("El Paraná está en ", el("em", { textContent: "alerta" }), ` en ${P.alerta.length} puertos. `);
-  } else if (P.ps.length) {
-    t.append("El Paraná está normal. ");
-  }
-  t.append(C.nivel === "normal" || C.nivel === "sin" ? "En Buenos Aires y el Delta, el río está tranquilo." : "Atención en el Delta.");
+  t.append(...titularRios(P));
+  // Lo más grave primero: con ciudades en evacuación no se dice que la costa está tranquila.
+  if (C.nivel !== "normal" && C.nivel !== "sin") t.append("Atención en el Delta.");
+  else if (!P.evac.length) t.append("En Buenos Aires y el Delta, el río está tranquilo.");
   if (L.conAlerta.length) {
     const ev = L.conAlerta[0].alertas[0].evento.toLowerCase();
-    t.append(" ", el("span", { className: "titular-extra", textContent: `Hay ${SMN_TXT[L.conAlerta[0].nivel_smn].toLowerCase()} por ${ev} en el AMBA.` }));
+    t.append(t.textContent.endsWith(" ") ? "" : " ", el("span", { className: "titular-extra", textContent: `Hay ${SMN_TXT[L.conAlerta[0].nivel_smn].toLowerCase()} por ${ev} en el AMBA.` }));
   }
 
   const carteles = [];
@@ -162,11 +188,11 @@ function pintarHoy() {
     const tramo = P.evac.length > 1 ? `de ${P.evac[0].puerto} a ${P.evac.at(-1).puerto}` : P.evac[0]?.puerto;
     const ordenRio = [...P.evac].sort((a, b) => datos.parana.puertos.indexOf(a) - datos.parana.puertos.indexOf(b));
     carteles.push(cartel({
-      icono: "rio", zona: "Río Paraná", nivel: P.nivel, estado: NIVEL_TXT[P.nivel] ?? "Sin datos", grande: true,
+      icono: "rio", zona: P.ps.every((p) => cuenca(p) === CUENCA_DEFECTO) ? "Río Paraná" : "Ríos", nivel: P.nivel, estado: NIVEL_TXT[P.nivel] ?? "Sin datos", grande: true,
       frase: P.evac.length
-        ? `El río pasa el nivel de evacuación en ${enumerar(ordenRio.map((p) => p.puerto))}.`
+        ? `El río pasa el nivel de evacuación en ${enumerar(ordenRio.map(conRio))}.`
           + (P.alerta.length ? ` ${P.alerta.length} puertos más están en alerta.` : "")
-        : P.alerta.length ? `En alerta: ${enumerar(P.alerta.map((p) => p.puerto))}.` : "Ningún puerto está en alerta.",
+        : P.alerta.length ? `En alerta: ${enumerar(P.alerta.map(conRio))}.` : "Ningún puerto está en alerta.",
       ir: tramo ? "Ver ciudad por ciudad" : "Ver el río", destino: "#rio",
     }));
   }
@@ -242,7 +268,7 @@ function mostrarLugar(nombre, { desplazar = true } = {}) {
     ficha.hidden = false;
     ficha.className = "ficha ficha-zona";
     ficha.style.setProperty("--c", COLOR.sin);
-    ficha.replaceChildren(el("p", { textContent: `No encontramos "${nombre}". Probá con una ciudad sobre el Paraná o una cuenca del AMBA.` }));
+    ficha.replaceChildren(el("p", { textContent: `No encontramos "${nombre}". Probá con una ciudad sobre el Paraná, el Uruguay o el Paraguay, o una cuenca del AMBA.` }));
     return;
   }
   ficha.hidden = false;
@@ -397,7 +423,8 @@ function parada(p) {
   const li = el("li", { className: `parada parada--${p.nivel}`, tabIndex: 0, dataset: { puerto: p.puerto }, style: { "--c": COLOR[nivel] } },
     escala(p),
     el("div", {},
-      el("p", { className: "parada-nombre", textContent: p.puerto }),
+      el("p", { className: "parada-nombre" }, p.puerto,
+        cuenca(p) === CUENCA_DEFECTO ? null : el("span", { className: "parada-rio", textContent: ` · río ${cuenca(p)}` })),
       el("p", { className: "parada-frase" },
         el("b", { textContent: p.viejo ? "Sin dato reciente" : NIVEL_TXT[p.nivel] }),
         ` · ${m(p.altura)}, ${fraseCorta(p)}${flecha(p)}`)));
@@ -435,7 +462,7 @@ function pintarEscalas() {
       items.push(el("li", {}, b));
     }
   }
-  if (!ps.length) items.push(el("li", { className: "parada-frase", textContent: "Todavía no hay alturas del Paraná. Reintentamos en un minuto." }));
+  if (!ps.length) items.push(el("li", { className: "parada-frase", textContent: "Todavía no hay alturas de los ríos. Reintentamos en un minuto." }));
   lista.replaceChildren(...items);
 }
 

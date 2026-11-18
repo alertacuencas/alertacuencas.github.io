@@ -44,6 +44,13 @@ La costa (sudestada, "el río está tranquilo") no entra ni en la voz ni en la p
 ver con el Paraná y desvía la atención. Solo entra si el Delta mismo está en alerta o el SMN tiene
 una alerta vigente en el AMBA.
 
+**Todos los ríos en la misma línea, de lo más grave para abajo** (desde el 18/11): el Uruguay, el
+Paraguay, el Río de la Plata y los afluentes entran igual que el Paraná. El "hoy" cuenta las ciudades
+en evacuación por río ("tres ciudades están en evacuación: una sobre el Uruguay y dos sobre el
+Paraná"), las peores se nombran con su río si no es el Paraná ("En San Javier, sobre el Uruguay, …")
+y al final se suman, sin nombrar ciudades, los ríos que solo están en alerta ("Además, el Paraguay
+está en alerta"). Con ciudades en evacuación no se dice que la costa está tranquila.
+
 Los datos tienen que ser los de Prefectura, que trae todos los puertos (San Javier, Barranqueras,
 Victoria) y la lectura del día. El respaldo del INA que usa GitHub no los tiene y puede venir
 atrasado: si el guion automático dice otra cantidad de ciudades, prepararlo desde la PC.

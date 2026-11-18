@@ -43,17 +43,22 @@ def test_parsea_la_tabla_real_del_16_de_noviembre(fixture_text):
     assert "Paso de la Patria" in puertos
 
 
-def test_todos_los_puertos_del_parana_tienen_ubicacion_en_el_mapa(fixture_text):
-    sin_ubicacion = [p.puerto for p in prefectura.parse(fixture_text("pna_alturas_16nov.html"), AHORA) if p.lat is None]
-    assert sin_ubicacion == []
+def test_todos_los_puertos_tienen_ubicacion_en_el_mapa_salvo_los_pendientes(fixture_text):
+    sin_ubicacion = {prefectura._sin_tildes(p.puerto.upper())
+                     for p in prefectura.parse(fixture_text("pna_alturas_16nov.html"), AHORA) if p.lat is None}
+    assert sin_ubicacion <= prefectura.SIN_UBICACION
 
 
-def test_deja_afuera_otros_rios_y_puertos_sin_umbral(fixture_text):
-    puertos = prefectura.parse(fixture_text("pna_alturas_16nov.html"), AHORA)
+def test_trae_todos_los_rios_con_su_cuenca_y_deja_afuera_las_represas(fixture_text):
+    puertos = {p.puerto: p for p in prefectura.parse(fixture_text("pna_alturas_16nov.html"), AHORA)}
 
-    assert {p.rio for p in puertos} <= prefectura.RIOS
-    assert all(p.altura < 30 for p in puertos), "las represas sin umbral (150 m) no entran"
-    assert "Buenos Aires" not in {p.puerto for p in puertos}  # río de la Plata
+    assert {p.rio for p in puertos.values()} <= prefectura.RIOS
+    assert all(p.altura < 30 for p in puertos.values()), "las represas (150 m, 35 m) no entran"
+    assert puertos["Concordia"].cuenca == "Uruguay"
+    assert puertos["Isla del Cerrito"].cuenca == "Paraguay"
+    assert puertos["Buenos Aires"].cuenca == "Río de la Plata"
+    assert puertos["San Fernando"].cuenca == "Paraná", "el Delta cuenta como Paraná"
+    assert puertos["San Javier"].cuenca == "Uruguay" and puertos["San Javier (Santa Fe)"].cuenca == "Paraná"
 
 
 def test_conserva_el_orden_de_aguas_arriba_hacia_el_delta(fixture_text):
@@ -76,7 +81,7 @@ def test_tendencia(var, tendencia):
 
 @pytest.mark.parametrize("cambio", [
     {"altura": "S/E"}, {"altura": "99.9"}, {"evac": "-"}, {"alerta": ""},
-    {"fecha": "sin fecha"}, {"fecha": "16/XYZ/26 - 1000"}, {"rio": "URUGUAY"},
+    {"fecha": "sin fecha"}, {"fecha": "16/XYZ/26 - 1000"}, {"rio": "EMBALSE RIO HONDO"},
 ])
 def test_filas_rotas_o_ajenas_se_ignoran(cambio):
     assert prefectura.parse(_fila(**cambio), AHORA) == []
