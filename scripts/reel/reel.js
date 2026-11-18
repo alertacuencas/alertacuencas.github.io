@@ -4,6 +4,8 @@
   // Lo que cambia cada día viene de reel-dia.js (window.REEL): ciudad, subtítulos y tiempos.
   // T = segundo del audio en que arranca cada bloque del guion.
   const { CIUDAD, SUBS, T } = window.REEL;
+  // FICHAS = [segundo, puerto] de cada ciudad que nombra la voz en el bloque "ciudad".
+  const FICHAS = window.REEL.FICHAS || [];
 
   const css = document.createElement("style");
   css.textContent = `
@@ -73,6 +75,10 @@
       const ms = escribir(CIUDAD);
       setTimeout(() => { mostrarLugar(CIUDAD, { desplazar: false }); desplazar(y("#ficha", 125), 900); foco($("#ficha"), 2400); }, ms + 150);
     }],
+    // las demás ciudades que nombra la voz: se cambia la ficha cuando arranca su frase
+    ...FICHAS.slice(1).map(([t, puerto]) => [t + 0.3, () => {
+      mostrarLugar(puerto, { desplazar: false }); desplazar(y("#ficha", 125), 500); foco($("#ficha"), 1600);
+    }]),
     [T.rio - 0.1, () => desplazar(y("#rio", 10), 900)],
     [T.rio + 1.1, () => desplazar(y("#escalas", 120) + 520, 2400)],
     [T.noOficial - 0.1, () => { const n = $(".no-oficial"); desplazar(y(n, 260), 1000); setTimeout(() => foco(n, 4200), 900); }],

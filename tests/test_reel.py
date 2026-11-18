@@ -312,3 +312,36 @@ def test_subtitulos_arrancan_cuando_la_voz_dice_su_frase():
     assert inicio["Y en Diamante, 35 cm"] == palabras[y_en][1]
     for (a, b, _), (c, _, _) in zip(subs, subs[1:]):
         assert b == pytest.approx(c)
+
+
+def _siete():
+    return _parana(_evac("Goya", 0.06), _evac("San Javier (Santa Fe)", 1.34), _evac("Paraná", 0.71),
+                   _evac("Hernandarias", 0.42), _evac("Diamante", 0.35), _evac("Reconquista", 0.29),
+                   _evac("Santa Fe", 0.16))
+
+
+def test_fichas_son_las_ciudades_que_nombra_la_voz():
+    gu = g.armar(_siete(), _estado(), None, AHORA)
+    assert gu.fichas == ("San Javier (Santa Fe)", "Paraná", "Hernandarias", "Diamante")
+    normal = g.armar(_parana(_puerto("Rosario", "normal")), _estado(), None, AHORA)
+    assert normal.fichas == ("Rosario",)
+
+
+def test_cada_ficha_aparece_cuando_la_voz_nombra_su_ciudad(tmp_path):
+    gu = g.armar(_siete(), _estado(), None, AHORA)
+    palabras = _palabras(gu.texto_voz)
+    t, subs = tiempos.calcular(gu, palabras, duracion=palabras[-1][1] + 0.5)
+    fichas = tiempos.fichas(gu, palabras, t)
+    assert [p for _, p in fichas] == list(gu.fichas)
+    assert fichas[0][0] == t["ciudad"]
+    en_la = next(i for i, (w, _) in enumerate(palabras) if w == "ciudad" and palabras[i + 2][0].startswith("Paraná")) - 2
+    assert fichas[1][0] == palabras[en_la][1]
+    js = salida.reel_dia_js(tmp_path, gu, t, subs, fichas).read_text()
+    datos = json.loads(js.split("window.REEL = ", 1)[1].rstrip().rstrip(";"))
+    assert datos["FICHAS"] == [[a, p] for a, p in fichas]
+
+
+def test_fichas_sin_transcripcion_queda_solo_la_primera():
+    gu = g.armar(_siete(), _estado(), None, AHORA)
+    t, _ = tiempos.calcular(gu, [("hola", 0.0)], duracion=30.0)
+    assert tiempos.fichas(gu, [("hola", 0.0)], t) == [(t["ciudad"], "San Javier (Santa Fe)")]

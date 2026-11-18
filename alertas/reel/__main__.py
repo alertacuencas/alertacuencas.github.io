@@ -82,7 +82,8 @@ def main(argv: list[str] | None = None) -> int:
     palabras, duracion = transcribir(audio)
     log.info("transcripción: %s", " ".join(w for w, _ in palabras))
     t, subs = tiempos.calcular(g, palabras, duracion)
-    log.info("escrito %s (duración %.1f s)", salida.reel_dia_js(dia, g, t, subs), duracion)
+    ruta = salida.reel_dia_js(dia, g, t, subs, tiempos.fichas(g, palabras, t))
+    log.info("escrito %s (duración %.1f s)", ruta, duracion)
     return 0
 
 

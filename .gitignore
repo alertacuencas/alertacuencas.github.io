@@ -9,6 +9,7 @@ __pycache__/
 .coverage
 data/samples/
 data/*.sqlite
+data/publicaciones.json
 web/data/estado.json
 web/data/serie.json
 data/snapshots/

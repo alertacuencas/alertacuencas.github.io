@@ -76,9 +76,12 @@ def guardar_guion(carpeta: Path, g: Guion) -> Path:
     return ruta
 
 
-def reel_dia_js(carpeta: Path, g: Guion, t: dict[str, float], subs: Subs) -> Path:
-    """La configuración del recorrido que lee scripts/reel/reel.js."""
-    datos = {"CIUDAD": g.ciudad, "T": t, "SUBS": [list(s) for s in subs]}
+def reel_dia_js(carpeta: Path, g: Guion, t: dict[str, float], subs: Subs,
+                fichas: list[tuple[float, str]] | None = None) -> Path:
+    """La configuración del recorrido que lee scripts/reel/reel.js. FICHAS: [segundo, puerto] de
+    cada ciudad que nombra la voz; la primera se escribe en el buscador y las demás se cambian solas."""
+    datos = {"CIUDAD": g.ciudad, "T": t, "SUBS": [list(s) for s in subs],
+             "FICHAS": [list(f) for f in (fichas or [])]}
     ruta = carpeta / "reel-dia.js"
     ruta.write_text(
         f"// Reel del {g.fecha:%d/%m/%Y}. Tiempos en segundos del audio (locucion.mp3). Generado por alertas.reel.\n"

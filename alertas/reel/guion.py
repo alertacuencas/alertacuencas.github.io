@@ -40,6 +40,7 @@ class Guion:
     nivel_parana: str
     costa_nivel: str       # vacío si el reel no habla de la costa
     avisos: tuple[str, ...]  # cosas a revisar antes de grabar
+    fichas: tuple[str, ...] = ()  # puertos que nombra el bloque "ciudad", en orden: una ficha por frase
 
     @property
     def texto_voz(self) -> str:
@@ -57,6 +58,7 @@ def cargar(ruta) -> Guion:
         bloques=tuple(Bloque(b["clave"], b["voz"], tuple(b["subs"])) for b in d["bloques"]),
         posteo=d["posteo"], titular_portada=d["titular_portada"], nivel_parana=d["nivel_parana"],
         costa_nivel=d["costa_nivel"], avisos=tuple(d["avisos"]),
+        fichas=tuple(d.get("fichas") or ((d["ciudad"],) if d["ciudad"] else ())),
     )
 
 
@@ -310,6 +312,7 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         posteo=_posteo(evac, alerta, nivel, costa_sub if con_costa else "", peores),
         titular_portada=_titular(evac, alerta, nivel, costa_titular if con_costa else "", smn),
         nivel_parana=nivel, costa_nivel=costa_nivel if con_costa else "", avisos=_avisos(parana, costa_nivel, ahora),
+        fichas=tuple(x["puerto"] for x in peores[:MAX_PEORES]) if peores else ((p["puerto"],) if p else ()),
     )
 
 

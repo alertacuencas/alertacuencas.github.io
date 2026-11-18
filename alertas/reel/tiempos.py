@@ -94,6 +94,20 @@ def _subs_bloque(b, palabras: Palabras, a: float, fin: float) -> Subs:
     return [(round(x, 2), round(z, 2), s) for x, z, s in zip(arranques, finales, b.subs)]
 
 
+def fichas(g: Guion, palabras: Palabras, t: dict[str, float]) -> list[tuple[float, str]]:
+    """Cuándo mostrar la ficha de cada ciudad del bloque "ciudad": una por frase de la voz. Si las
+    frases no se encuentran en la transcripción, queda solo la primera ficha."""
+    if not g.fichas:
+        return []
+    b = next(x for x in g.bloques if x.clave == "ciudad")
+    claves = [x.clave for x in g.bloques]
+    fin = t.get(claves[claves.index("ciudad") + 1], float("inf"))
+    frases = _inicios_frases(b.voz, palabras, t["ciudad"], fin) if len(_frases(b.voz)) == len(g.fichas) else None
+    if not frases:
+        return [(t["ciudad"], g.fichas[0])]
+    return [(round(a, 2), p) for a, p in zip(frases, g.fichas)]
+
+
 def calcular(g: Guion, palabras: Palabras, duracion: float) -> tuple[dict[str, float], Subs]:
     inicios = _inicios(g, palabras, duracion)
     t = {b.clave: round(s, 2) for b, s in zip(g.bloques, inicios) if b.clave != "hoy"}

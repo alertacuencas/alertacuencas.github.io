@@ -1,4 +1,6 @@
-# Reel diario, paso 1: a la mañana consulta las fuentes (sin depender del monitor), arma el
+# Reel diario, paso 1 (respaldo): lo normal es que lo prepare la PC a las 07:00 con
+# scripts/reel/preparar-local.sh, porque Prefectura no responde desde GitHub. Si a las 07:30 la
+# release del día ya tiene el guion, no hace nada. Si no: consulta las fuentes, arma el
 # guion, el texto para ElevenLabs, el posteo y la portada, y avisa con un issue.
 # Todo queda en la release "reel-AAAA-MM-DD"; el guion además se guarda en reels/AAAA-MM-DD/.
 # Después: generar la voz y correr scripts/reel/subir-voz.sh (ver reels/README.md).
@@ -6,7 +8,7 @@ name: reel-preparar
 
 on:
   schedule:
-    - cron: "30 12 * * *"   # 09:30 hora argentina
+    - cron: "30 10 * * *"   # 07:30 hora argentina, respaldo de la PC
   workflow_dispatch:
     inputs:
       rehacer:
@@ -49,9 +51,12 @@ jobs:
         run: |
           FECHA=$(TZ=America/Argentina/Buenos_Aires date +%F)
           echo "fecha=$FECHA" >> "$GITHUB_OUTPUT"
-          if gh release view "reel-$FECHA" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx locucion.mp3 \
-             && [ "${{ inputs.rehacer }}" != "true" ]; then
+          ASSETS=$(gh release view "reel-$FECHA" --json assets --jq '.assets[].name' 2>/dev/null || true)
+          if grep -qx locucion.mp3 <<< "$ASSETS" && [ "${{ inputs.rehacer }}" != "true" ]; then
             echo "La voz de hoy ya está subida: no rehago el guion para no desfasarlo del audio." >> "$GITHUB_STEP_SUMMARY"
+            echo "seguir=no" >> "$GITHUB_OUTPUT"
+          elif grep -qx guion.json <<< "$ASSETS" && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "El guion de hoy ya lo preparó la PC (con Prefectura): no lo piso con el respaldo." >> "$GITHUB_STEP_SUMMARY"
             echo "seguir=no" >> "$GITHUB_OUTPUT"
           else
             echo "seguir=si" >> "$GITHUB_OUTPUT"
@@ -117,32 +122,4 @@ jobs:
 
       - name: Avisar con un issue
         if: steps.previo.outputs.seguir == 'si'
-        run: |
-          D="${{ steps.dia.outputs.dia }}"; F="${{ steps.dia.outputs.fecha }}"
-          {
-            echo "## 1. Texto para ElevenLabs"
-            echo
-            echo "Julieta - Argentine Warm & Friendly · **Eleven v4** · estabilidad **50 %** · similitud **75 %** · \"Etiquetar automáticamente\" **apagado**."
-            echo
-            echo '```'
-            cat "$D/texto-voz.txt"
-            echo '```'
-            echo
-            echo "## 2. Subir la voz"
-            echo
-            echo 'Descargá el mp3 y corré `scripts/reel/subir-voz.sh` desde el repo.'
-            echo
-            echo "## Para revisar"
-            echo
-            jq -r 'if (.avisos | length) == 0 then "- Sin avisos." else (.avisos[] | "- ⚠️ " + .) end' "$D/guion.json"
-            echo
-            echo "## Texto del posteo"
-            echo
-            sed 's/^/> /' "$D/posteo.txt"
-            echo
-            echo "Portada y datos: release [reel-$F](https://github.com/${{ github.repository }}/releases/tag/reel-$F)."
-          } > cuerpo.md
-          gh label create reel --color 7fd3ff --description "Reel diario de Instagram" --force >/dev/null
-          TITULO="Reel del $(date -d "$F" +%d/%m)"
-          N=$(gh issue list --label reel --state open --search "in:title \"$TITULO\"" --json number --jq '.[0].number // empty')
-          if [ -n "$N" ]; then gh issue edit "$N" --body-file cuerpo.md; else gh issue create --title "$TITULO" --label reel --body-file cuerpo.md; fi
+        run: scripts/reel/avisar-issue.sh "${{ steps.dia.outputs.dia }}" "${{ steps.dia.outputs.fecha }}" "${{ github.repository }}"
