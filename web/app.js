@@ -295,6 +295,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Cuencas: COHIFE, BA Data',
 }).addTo(mapa);
 const capaPuertos = L.layerGroup().addTo(mapa);
+const capaEstaciones = L.layerGroup().addTo(mapa);
 const marcadores = new Map();
 const capasZona = new Map();
 let capaZonas = null;
@@ -321,12 +322,13 @@ function pintarMapa() {
     const mk = L.circleMarker([p.lat, p.lon], {
       radius: { evacuacion: 9, alerta: 7, normal: 5 }[nivel] ?? 5, weight: 2, color: "#fbf6ee",
       fillColor: HEX[nivel] ?? "#9a8f82", fillOpacity: 1,
-    }).bindTooltip(`${p.puerto} · ${p.viejo ? "sin dato" : NIVEL_TXT[p.nivel]} · ${m(p.altura)}`)
+    }).bindTooltip(texto(`${p.puerto} · ${p.viejo ? "sin dato" : NIVEL_TXT[p.nivel]} · ${m(p.altura)}`))
       .on("click", () => { seleccionarParada(p.puerto, { desplazar: true }); })
       .addTo(capaPuertos);
     marcadores.set(p.puerto, mk);
   }
   limitesParana = pts.length ? L.latLngBounds(pts) : null;
+  pintarEstaciones();
   if (capaZonas) capaZonas.remove();
   capasZona.clear();
   if (datos.zonas && datos.estado) {
@@ -338,12 +340,56 @@ function pintarMapa() {
       onEachFeature: (f, capa) => {
         capasZona.set(f.properties.id, capa);
         const z = datos.estado.zonas[f.properties.id];
-        if (z) capa.bindTooltip(`${z.nombre} · ${SMN_TXT[z.nivel_smn]}`).on("click", () => mostrarLugar(z.nombre));
+        if (z) capa.bindTooltip(texto(`${z.nombre} · ${SMN_TXT[z.nivel_smn]}`)).on("click", () => mostrarLugar(z.nombre));
       },
     }).addTo(mapa);
     capaZonas.bringToBack();
   }
   if (limitesParana && !mapaEncuadrado) { mapa.fitBounds(limitesParana, { padding: [24, 24] }); mapaEncuadrado = true; }
+}
+
+// Tooltip con textContent: los nombres vienen de fuentes externas y Leaflet pone los textos como HTML.
+const texto = (t) => el("span", { textContent: t });
+const LLUVIA_TXT = { sin: "sin lluvia", debil: "lluvia débil", moderada: "lluvia moderada", fuerte: "lluvia fuerte" };
+const MAREOGRAFOS = { "shn:SFER": "SFER", "shn:BSAS": "BSAS", "shn:LPLA": "LPLA" };
+
+// Mareógrafos del SHN, el arroyo Medrano y la lluvia en los aeropuertos (estado.json), con un
+// ícono distinto al de los puertos para no confundirlos.
+function fraseEstacion(s) {
+  if (s.viejo) return `${s.nombre} · sin dato reciente`;
+  if (s.tipo === "meteo") {
+    const tormenta = { si: "tormenta", cercana: "tormenta cerca" }[s.tormenta];
+    const nombre = /aeropuerto/i.test(s.nombre) ? s.nombre : `${s.nombre} (aeropuerto)`;
+    return `${nombre} · ${tormenta ?? LLUVIA_TXT[s.lluvia ?? "sin"]}`;
+  }
+  if (s.altura == null) return `${s.nombre} · sin dato`;
+  const res = s.residuo == null ? ""
+    : ` · ${distancia(s.residuo)} ${s.residuo >= 0 ? "más alta" : "más baja"} que la marea normal`;
+  return `${s.nombre} · ${m(s.altura)}${res}`;
+}
+function claseEstacion(s) {
+  if (s.viejo) return "pin--sin";
+  if (s.tipo === "hidro") return "pin--agua";
+  if (s.tormenta === "si" || s.tormenta === "cercana") return "pin--tormenta";
+  return s.lluvia && s.lluvia !== "sin" ? "pin--lluvia" : "pin--seco";
+}
+function pintarEstaciones() {
+  capaEstaciones.clearLayers();
+  for (const s of datos.estado?.estaciones ?? []) {
+    if (!Number.isFinite(s.lat) || !Number.isFinite(s.lon)) continue;
+    const forma = s.tipo === "meteo" ? "pin-cuadro" : "pin-rombo";
+    const icono = L.divIcon({ className: `pin ${forma} ${claseEstacion(s)}`, iconSize: [14, 14] });
+    const mk = L.marker([s.lat, s.lon], { icon: icono, keyboard: false }).bindTooltip(texto(fraseEstacion(s)));
+    const est = MAREOGRAFOS[s.id];
+    if (est) mk.on("click", () => verMareografo(est));
+    mk.addTo(capaEstaciones);
+  }
+}
+function verMareografo(est) {
+  const det = document.querySelector(".detalle");
+  if (det) det.open = true;
+  document.querySelector(`.sud-tabs button[data-est="${est}"]`)?.click();
+  document.querySelector(".sudestada")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function parada(p) {

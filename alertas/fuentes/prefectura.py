@@ -78,6 +78,20 @@ COORDS = {
     "YACYRETA AFLUENTE": (-27.4826, -56.7272),
     "YACYRETA EFLUENTE": (-27.4826, -56.7272),
     "ZARATE": (-34.0988, -59.0109),
+    "BARRANQUERAS": (-27.4833, -58.9333),
+    # el INA ubica esta escala sobre el río Uruguay (otra San Javier, en Misiones): es la
+    # de Santa Fe, sobre el río San Javier
+    "SAN JAVIER (SANTA FE)": (-30.5833, -59.9333),
+    "VICTORIA": (-32.6558, -60.2196),
+    "BARADERO": (-33.8007, -59.4956),
+    "CANAL NUEVO": (-33.8627, -58.6604),
+    "MARTIN GARCIA": (-34.1903, -58.2530),
+    "TIGRE": (-34.4159, -58.5780),
+    "DIQUE LUJAN": (-34.3516, -58.6861),
+    "CHANA MINI": (-34.2, -58.4833),
+    "SAN FERNANDO": (-34.4333, -58.55),
+    "SAN ISIDRO": (-34.4572, -58.5072),
+    "OLIVOS": (-34.5067, -58.4759),
 }
 # Orden de la tabla de Prefectura, aguas abajo. En Misiones y Corrientes el río corre de
 # este a oeste, así que ordenar por latitud mezclaría los puertos.

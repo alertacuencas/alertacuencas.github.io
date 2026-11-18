@@ -185,6 +185,22 @@ a { color: inherit; }
 }
 .mapa-vistas button[aria-pressed="true"] { background: var(--cartel); color: var(--cartel-texto); }
 .mapa-vistas button:focus-visible { outline: 3px solid var(--estuario); outline-offset: -3px; }
+/* Estaciones del AMBA: rombo = agua (mareógrafos y arroyo), cuadrado = lluvia en aeropuertos */
+.pin { border: 2px solid #fbf6ee; box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); box-sizing: border-box; }
+.pin-rombo { transform: rotate(45deg); border-radius: 2px; }
+.pin-cuadro { border-radius: 3px; }
+.pin--agua { background: #4a7c8c; }
+.pin--seco { background: #9a8f82; }
+.pin--lluvia { background: #2f6fb0; }
+.pin--tormenta { background: #b3261e; }
+.pin--sin { background: #cfc6ba; }
+.mapa-leyenda {
+  position: absolute; left: 0.7rem; bottom: 1.6rem; z-index: 500; margin: 0; padding: 0.35rem 0.6rem;
+  display: flex; gap: 0.8rem; align-items: center; border-radius: 6px; background: rgb(255 255 255 / 0.92);
+  color: #1e1a16; font: 500 0.75rem var(--fuente); box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+}
+.mapa-leyenda span { display: inline-flex; align-items: center; gap: 0.35rem; }
+.mapa-leyenda .pin { display: inline-block; width: 11px; height: 11px; }
 
 .escalas { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
 .grupo-titulo {

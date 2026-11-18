@@ -43,6 +43,11 @@ def test_parsea_la_tabla_real_del_16_de_noviembre(fixture_text):
     assert "Paso de la Patria" in puertos
 
 
+def test_todos_los_puertos_del_parana_tienen_ubicacion_en_el_mapa(fixture_text):
+    sin_ubicacion = [p.puerto for p in prefectura.parse(fixture_text("pna_alturas_16nov.html"), AHORA) if p.lat is None]
+    assert sin_ubicacion == []
+
+
 def test_deja_afuera_otros_rios_y_puertos_sin_umbral(fixture_text):
     puertos = prefectura.parse(fixture_text("pna_alturas_16nov.html"), AHORA)
 
