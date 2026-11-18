@@ -118,10 +118,10 @@ def portada_reel(titular: str, nivel_parana: str, costa_nivel: str, ahora: datet
     d.rectangle([0, y, 22, y + 560], fill=COLOR.get(nivel_parana, COLOR["sin"]))
     tam = 96 if len(titular) < 110 else 80
     _parrafo(d, (MARGEN, y), titular, _archivo(tam, 800, 82), ANCHO - 2 * MARGEN, interlinea=1.05)
-    _estados(d, ALTO - 300, (
-        ("Río Paraná", nivel_parana, NIVEL_TXT.get(nivel_parana, "sin datos")),
-        ("Buenos Aires y el Delta", costa_nivel, NIVEL_TXT.get(costa_nivel, "sin datos")),
-    ))
+    filas = [("Río Paraná", nivel_parana, NIVEL_TXT.get(nivel_parana, "sin datos"))]
+    if costa_nivel:  # vacío cuando el reel habla solo del Paraná
+        filas.append(("Buenos Aires y el Delta", costa_nivel, NIVEL_TXT.get(costa_nivel, "sin datos")))
+    _estados(d, ALTO - 300, tuple(filas))
     lienzo = Image.new("RGB", (ANCHO, 1920), CARTEL)
     lienzo.paste(img, (0, (1920 - ALTO) // 2))
     return lienzo

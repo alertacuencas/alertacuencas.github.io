@@ -82,7 +82,8 @@
   function arrancar() {
     negro.style.opacity = "0";
     const t0 = performance.now();
-    for (const [t, f] of PASOS) setTimeout(f, t * 1000);
+    // un bloque que no está en el guion del día (p. ej. la costa) no tiene tiempo: ese paso no se hace
+    for (const [t, f] of PASOS) if (Number.isFinite(t)) setTimeout(f, t * 1000);
     const subs = () => {
       const t = (performance.now() - t0) / 1000;
       const s = SUBS.find(([a, b]) => t >= a && t < b);

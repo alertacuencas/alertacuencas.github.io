@@ -1,41 +1,40 @@
 # Reel 18/11/2026
 
-**Estado:** preparado automáticamente el 18/11 a las 10:04; falta la locución.
-**Ciudad de ejemplo:** Paraná.
+**Estado:** preparado automáticamente el 18/11 a las 10:12; falta la locución.
+**Ciudad de ejemplo:** San Javier (Santa Fe).
 
 ## Para revisar antes de grabar
 
-- ⚠️ La lectura del Paraná es del 17/11: todavía no llegó la de hoy.
+- Sin avisos.
 
 ## Texto para ElevenLabs
 
 Julieta - Argentine Warm & Friendly · Eleven v4 · estabilidad 50 % · similitud 75 % ·
 "Etiquetar automáticamente" apagado.
 
-> Hoy, ocho ciudades del Paraná están en evacuación. Desde Goya hasta Diamante. Otras dos, en alerta. En San Fernando, el río está cincuenta y siete centímetros más alto que la marea de todos los días. ¿Y en tu ciudad? En la ciudad de Paraná, el agua está setenta y un centímetros por encima del nivel de evacuación. Acá está todo el Paraná, de lo más grave a lo más tranquilo. No somos un sistema oficial: ante una emergencia, Defensa Civil, ciento tres. Seguí a Alerta Cuencas.
+> Hoy, nueve ciudades del Paraná están en evacuación. ¿Dónde está más complicado? En San Javier, el agua está un metro con treinta y cuatro centímetros por encima del nivel de evacuación. En la ciudad de Paraná, setenta y un centímetros. En Hernandarias, cuarenta y dos centímetros. Y en Diamante, treinta y cinco centímetros. Reconquista, Santa Fe, La Paz, Goya y Esquina también pasaron el nivel de evacuación. Por ahora, el río se mantiene estable. No somos un sistema oficial: ante una emergencia, Defensa Civil, ciento tres. Seguí a Alerta Cuencas.
 
 ## Guion por bloques
 
 | Bloque | Voz | Subtítulos |
 |---|---|---|
-| hoy | Hoy, ocho ciudades del Paraná están en evacuación. Desde Goya hasta Diamante. Otras dos, en alerta. | Hoy, 8 ciudades del Paraná están en evacuación / Desde Goya hasta Diamante. Otras 2, en alerta |
-| costa | En San Fernando, el río está cincuenta y siete centímetros más alto que la marea de todos los días. | En San Fernando, el río está 57 cm más alto que la marea de todos los días |
-| tuCiudad | ¿Y en tu ciudad? | ¿Y en tu ciudad? |
-| ciudad | En la ciudad de Paraná, el agua está setenta y un centímetros por encima del nivel de evacuación. | En la ciudad de Paraná, el agua está 71 cm por encima del nivel de evacuación |
-| rio | Acá está todo el Paraná, de lo más grave a lo más tranquilo. | Acá está todo el Paraná, de lo más grave a lo más tranquilo |
+| hoy | Hoy, nueve ciudades del Paraná están en evacuación. | Hoy, 9 ciudades del Paraná están en evacuación |
+| tuCiudad | ¿Dónde está más complicado? | ¿Dónde está más complicado? |
+| ciudad | En San Javier, el agua está un metro con treinta y cuatro centímetros por encima del nivel de evacuación. En la ciudad de Paraná, setenta y un centímetros. En Hernandarias, cuarenta y dos centímetros. Y en Diamante, treinta y cinco centímetros. | En San Javier, el agua está 1,34 m por encima del nivel de evacuación / En Paraná, 71 cm. En Hernandarias, 42 cm / Y en Diamante, 35 cm |
+| rio | Reconquista, Santa Fe, La Paz, Goya y Esquina también pasaron el nivel de evacuación. Por ahora, el río se mantiene estable. | Reconquista, Santa Fe, La Paz, Goya y Esquina también pasaron el nivel de evacuación / Por ahora, el río se mantiene estable |
 | noOficial | No somos un sistema oficial: ante una emergencia, Defensa Civil, ciento tres. | No somos un sistema oficial / Ante una emergencia: Defensa Civil, 103 |
 | fin | Seguí a Alerta Cuencas. | Placa final |
 
 ## Texto del posteo
 
-> El Paraná está alto: 8 ciudades en evacuación, de Goya a Diamante, y 2 en alerta.
-> En San Fernando, el río está 57 cm más alto que la marea de todos los días.
+> El Paraná tiene 9 ciudades en evacuación.
+> Lo más grave: San Javier (+1,34 m), Paraná (+71 cm), Hernandarias (+42 cm) y Diamante (+35 cm).
 > Buscá tu ciudad en alertacuencas.github.io (link en el perfil).
 > ⚠️ No es un sistema oficial. Ante una emergencia: Defensa Civil 103.
 > Datos: Prefectura Naval, INA, Hidrografía Naval y SMN.
 
 ## Portada
 
-> El Paraná está en evacuación en 8 ciudades. En San Fernando, el río está 57 cm sobre la marea.
+> El Paraná está en evacuación en 9 ciudades.
 
 ## Notas

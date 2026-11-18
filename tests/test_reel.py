@@ -70,12 +70,14 @@ def test_distancias(metros, voz, sub):
 def test_guion_con_ciudades_en_evacuacion():
     gu = g.armar(EVAC, _estado(), None, AHORA)
     voz = gu.texto_voz
-    assert voz.startswith("Hoy, tres ciudades del Paraná están en evacuación. Desde Goya hasta Diamante. Otra, en alerta.")
-    assert "En Buenos Aires y el Delta, el río está tranquilo." in voz
-    assert "¿Y en tu ciudad?" in voz
-    # la ciudad de ejemplo es la que más pasó el nivel de evacuación
+    # solo lo crítico: sin rango de ciudades, sin las de alerta y sin la costa tranquila
+    assert voz.startswith("Hoy, tres ciudades del Paraná están en evacuación. ¿Dónde está más complicado?")
+    assert "Desde" not in voz and "tranquilo" not in voz and "alerta" not in voz
+    # la ficha es la que más pasó el nivel de evacuación, y después las que siguen
     assert gu.ciudad == "Paraná"
-    assert "En la ciudad de Paraná, el agua está sesenta y nueve centímetros por encima del nivel de evacuación." in voz
+    assert ("En la ciudad de Paraná, el agua está sesenta y nueve centímetros por encima del nivel de evacuación. "
+            "En Diamante, treinta y dos centímetros. Y en Goya, once centímetros.") in voz
+    assert "Acá está todo el Paraná. Por ahora, el río se mantiene estable." in voz
     assert voz.endswith("No somos un sistema oficial: ante una emergencia, Defensa Civil, ciento tres. Seguí a Alerta Cuencas.")
     assert not any(c.isdigit() for c in voz)  # la voz va con números en letras
 
@@ -90,7 +92,43 @@ def test_subtitulos_con_numeros_y_cortos():
 
 def test_claves_de_bloques_en_orden():
     gu = g.armar(EVAC, _estado(), None, AHORA)
-    assert [b.clave for b in gu.bloques] == ["hoy", "costa", "tuCiudad", "ciudad", "rio", "noOficial", "fin"]
+    assert [b.clave for b in gu.bloques] == ["hoy", "tuCiudad", "ciudad", "rio", "noOficial", "fin"]
+    sin_evac = g.armar(_parana(_puerto("Rosario", "normal")), _estado(), None, AHORA)
+    assert [b.clave for b in sin_evac.bloques] == ["hoy", "costa", "tuCiudad", "ciudad", "rio", "noOficial", "fin"]
+
+
+def _evac(nombre, exceso, tendencia="estable"):
+    return _puerto(nombre, "evacuacion", exceso) | {"tendencia": tendencia}
+
+
+def test_evacuacion_nombra_las_cuatro_peores_y_despues_el_resto():
+    p = _parana(_evac("Goya", 0.06), _evac("San Javier (Santa Fe)", 1.34), _evac("Paraná", 0.71),
+                _evac("Hernandarias", 0.42), _evac("Diamante", 0.35), _evac("Reconquista", 0.29),
+                _evac("Santa Fe", 0.16), _puerto("Victoria", "alerta", 0.14))
+    gu = g.armar(p, _estado(), None, AHORA)
+    assert gu.ciudad == "San Javier (Santa Fe)"
+    ciudad = next(b for b in gu.bloques if b.clave == "ciudad")
+    assert ciudad.voz == ("En San Javier, el agua está un metro con treinta y cuatro centímetros por encima del nivel de "
+                          "evacuación. En la ciudad de Paraná, setenta y un centímetros. En Hernandarias, cuarenta y dos "
+                          "centímetros. Y en Diamante, treinta y cinco centímetros.")
+    assert "En Paraná, 71 cm" in " ".join(ciudad.subs)
+    rio = next(b for b in gu.bloques if b.clave == "rio")
+    assert rio.voz == "Reconquista, Santa Fe y Goya también pasaron el nivel de evacuación. Por ahora, el río se mantiene estable."
+    assert gu.texto_voz.startswith("Hoy, siete ciudades del Paraná están en evacuación.")
+    assert "Victoria" not in gu.texto_voz
+    assert "Lo más grave: San Javier (+1,34 m), Paraná (+71 cm), Hernandarias (+42 cm) y Diamante (+35 cm)." in gu.posteo
+
+
+@pytest.mark.parametrize("tendencias, frase", [
+    (["sube", "sube", "estable"], "En la mayoría, el río sigue subiendo."),
+    (["baja", "baja", "sube"], "En la mayoría, el río ya empieza a bajar."),
+    (["estable", "estable", "sube"], "Por ahora, el río se mantiene estable."),
+    (["sube", "baja", "estable"], ""),
+])
+def test_tendencia_de_las_ciudades_en_evacuacion(tendencias, frase):
+    p = _parana(*(_evac(n, 0.1 * (i + 1), t) for i, (n, t) in enumerate(zip(["Goya", "Esquina", "La Paz"], tendencias))))
+    rio = next(b for b in g.armar(p, _estado(), None, AHORA).bloques if b.clave == "rio")
+    assert rio.voz.endswith(frase or "Acá está todo el Paraná.")
 
 
 def test_sin_evacuacion_usa_alerta():
@@ -126,7 +164,9 @@ def test_posteo_y_portada():
     gu = g.armar(EVAC, _estado(), None, AHORA)
     assert "alertacuencas.github.io (link en el perfil)" in gu.posteo
     assert "Defensa Civil 103" in gu.posteo
-    assert gu.titular_portada == "El Paraná está en evacuación en 3 ciudades. En Buenos Aires y el Delta, el río está tranquilo."
+    assert gu.titular_portada == "El Paraná está en evacuación en 3 ciudades."
+    assert "tranquilo" not in gu.posteo
+    assert gu.costa_nivel == ""  # la portada tampoco muestra la costa
 
 
 # ---------- tiempos ----------
@@ -142,8 +182,7 @@ def test_tiempos_alinea_cada_bloque_con_la_transcripcion():
     palabras = _palabras(transcripto)
     t, subs = tiempos.calcular(gu, palabras, duracion=palabras[-1][1] + 0.5)
     inicio = {w: s for w, s in palabras}
-    assert t["costa"] == pytest.approx(next(s for w, s in palabras if w == "Buenos") - 0.3)
-    assert t["tuCiudad"] == inicio["¿Y"]
+    assert t["tuCiudad"] == inicio["¿Dónde"]
     assert t["rio"] == inicio["Acá"]
     assert t["noOficial"] == inicio["No"]
     assert t["fin"] == inicio["Seguí"]
@@ -157,7 +196,7 @@ def test_tiempos_alinea_cada_bloque_con_la_transcripcion():
 def test_tiempos_sin_ancla_reparte_por_largo():
     gu = g.armar(EVAC, _estado(), None, AHORA)
     t, subs = tiempos.calcular(gu, [("hola", 0.0)], duracion=25.0)
-    assert 0 < t["costa"] < t["tuCiudad"] < t["ciudad"] < t["rio"] < t["noOficial"] < t["fin"] < 25.0
+    assert 0 < t["tuCiudad"] < t["ciudad"] < t["rio"] < t["noOficial"] < t["fin"] < 25.0
 
 
 # ---------- salida ----------
@@ -170,7 +209,7 @@ def test_reel_dia_js(tmp_path):
     assert js.startswith("// Reel del 17/11/2026")
     datos = json.loads(js.split("window.REEL = ", 1)[1].rstrip().rstrip(";"))
     assert datos["CIUDAD"] == "Paraná"
-    assert set(datos["T"]) == {"costa", "tuCiudad", "ciudad", "rio", "noOficial", "fin"}
+    assert set(datos["T"]) == {"tuCiudad", "ciudad", "rio", "noOficial", "fin"}
     assert len(datos["SUBS"]) == len(subs)
 
 
@@ -181,6 +220,9 @@ def test_preparar_escribe_los_archivos_del_dia(tmp_path):
     assert {"guion.md", "texto-voz.txt", "posteo.txt", "portada.png"} <= nombres
     assert (tmp_path / "texto-voz.txt").read_text().strip() == gu.texto_voz
     assert Image.open(tmp_path / "portada.png").size == (1080, 1920)
+    con_costa = g.armar(_parana(_puerto("Rosario", "normal")), _estado(), None, AHORA)
+    salida.preparar(tmp_path / "otra", con_costa, AHORA)
+    assert Image.open(tmp_path / "otra" / "portada.png").size == (1080, 1920)
     md = (tmp_path / "guion.md").read_text()
     assert md.startswith("# Reel 17/11/2026")
     assert gu.texto_voz in md
@@ -205,7 +247,7 @@ def test_justo_en_el_nivel_de_evacuacion():
 
 
 def test_costa_sin_datos_no_dice_tranquilo():
-    p = _parana(_puerto("Goya", "evacuacion", 0.2))  # ningún puerto del Delta y sin serie
+    p = _parana(_puerto("Goya", "alerta", 0.2))  # ningún puerto del Delta y sin serie
     gu = g.armar(p, _estado(), None, AHORA)
     assert "el río está tranquilo" not in gu.texto_voz
     assert "No hay lecturas recientes del Delta." in gu.texto_voz
@@ -219,9 +261,12 @@ def _serie(residuo, ts):
 
 def test_sudestada_reciente_se_menciona_y_la_vieja_no():
     delta = _puerto("San Fernando", "normal", rio="PARANADELASPALMAS")
-    p = _parana(_puerto("Goya", "evacuacion", 0.2), delta)
+    p = _parana(_puerto("Goya", "alerta", 0.2), delta)
     reciente = g.armar(p, _estado(), _serie(0.8, "2026-11-17T12:30:00+00:00"), AHORA)
     assert "En San Fernando, el río está ochenta centímetros más alto que la marea" in reciente.texto_voz
+    # con ciudades del Paraná en evacuación, la sudestada no entra: el reel habla solo de lo crítico
+    con_evac = g.armar(_parana(_puerto("Goya", "evacuacion", 0.2), delta), _estado(), _serie(0.8, "2026-11-17T12:30:00+00:00"), AHORA)
+    assert "San Fernando" not in con_evac.texto_voz
     vieja = g.armar(p, _estado(), _serie(0.8, "2026-11-16T12:30:00+00:00"), AHORA)
     assert "ochenta centímetros" not in vieja.texto_voz
 
@@ -230,7 +275,7 @@ def test_nombres_de_puertos_limpios_en_la_voz():
     p = _parana(_puerto("San Lorenzo (San Martín)", "evacuacion", 0.2), _puerto("Paraná", "evacuacion", 0.1))
     voz = g.armar(p, _estado(), None, AHORA).texto_voz
     assert "(" not in voz
-    assert "Desde San Lorenzo hasta la ciudad de Paraná." in voz
+    assert "En San Lorenzo, el agua está" in voz
 
 
 def test_guion_se_guarda_y_se_recupera_igual(tmp_path):

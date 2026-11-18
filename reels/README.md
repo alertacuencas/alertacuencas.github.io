@@ -30,6 +30,24 @@ su boceto y sus archivos.
 | 6 | **"No somos un sistema oficial. Ante una emergencia, Defensa Civil 103."** | Aviso "No es un sistema oficial" |
 | 7 | **"Seguí a Alerta Cuencas."** | Placa final @alertacuencas |
 
+**Con ciudades del Paraná en evacuación, solo lo crítico** (desde el 18/11):
+
+| # | Bloque | En pantalla |
+|---|---|---|
+| 1 | **Hoy:** cuántas ciudades están en evacuación (sin rango ni las de alerta) | Paso 1 · titular y cartel del Paraná |
+| 2 | **"¿Dónde está más complicado?"** | Paso 2 · Tu lugar |
+| 3 | **Las 4 que más pasaron el nivel de evacuación**, con su número; la ficha es la peor | Se escribe la ciudad y aparece la ficha |
+| 4 | **El resto de las ciudades en evacuación** y si el río sube, baja o está estable en la mayoría | Paso 3 · El río |
+| 5–6 | No somos oficiales · Seguí a Alerta Cuencas | Igual que arriba |
+
+La costa (sudestada, "el río está tranquilo") no entra ni en la voz ni en la portada: no tiene que
+ver con el Paraná y desvía la atención. Solo entra si el Delta mismo está en alerta o el SMN tiene
+una alerta vigente en el AMBA.
+
+Los datos tienen que ser los de Prefectura, que trae todos los puertos (San Javier, Barranqueras,
+Victoria) y la lectura del día. El respaldo del INA que usa GitHub no los tiene y puede venir
+atrasado: si el guion automático dice otra cantidad de ciudades, prepararlo desde la PC.
+
 Los tiempos de cada paso están en `PASOS`, en [`scripts/reel/reel.js`](../scripts/reel/reel.js).
 Si la locución nueva dura distinto, hay que ajustar esos tiempos y, si cambia, la ciudad de ejemplo.
 
