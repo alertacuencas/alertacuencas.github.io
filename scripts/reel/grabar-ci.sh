@@ -16,7 +16,21 @@ mkdir -p "$SITIO/data"
 cp "$DATOS"/*.json "$SITIO/data/"
 cp "$RAIZ/web/data/zonas.geojson" "$SITIO/data/" 2>/dev/null || true
 cp "$RAIZ/scripts/reel/reel.js" "$DIA/reel-dia.js" "$SITIO"/
-sed -i 's|\(<script src="app.js"[^>]*></script>\)|\1\n  <script src="reel-dia.js"></script>\n  <script src="reel.js"></script>|' "$SITIO/index.html"
+# El reloj de la página arranca en el momento en que se preparó el guion (ahora.txt): la web se ve
+# igual que cuando se escribió lo que dice la voz ("actualizado hace X minutos", fecha de hoy).
+AHORA=$(tr -d '[:space:]' < "$DIA/ahora.txt")
+[[ "$AHORA" =~ ^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9:.]+(\+00:00|Z)$ ]] || { echo "ahora.txt inválido: $AHORA" >&2; exit 1; }
+cat > "$SITIO/reloj-reel.js" <<JS
+(() => {
+  const base = Date.parse("$AHORA"), t0 = performance.now(), Real = Date;
+  class Reloj extends Real {
+    constructor(...a) { super(...(a.length ? a : [base + performance.now() - t0])); }
+    static now() { return base + performance.now() - t0; }
+  }
+  window.Date = Reloj;
+})();
+JS
+sed -i 's|\(<script src="app.js"[^>]*></script>\)|  <script src="reloj-reel.js"></script>\n\1\n  <script src="reel-dia.js"></script>\n  <script src="reel.js"></script>|' "$SITIO/index.html"
 grep -q 'reel-dia.js' "$SITIO/index.html" || { echo "no pude insertar el recorrido en index.html" >&2; exit 1; }
 
 # 2. Servidor local, pantalla virtual de 1080×1920 y navegador a 360×640 con escala 3
