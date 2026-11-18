@@ -3,8 +3,8 @@ window.REEL = {
   "CIUDAD": "San Javier (Santa Fe)",
   "T": {
     "tuCiudad": 3.28,
-    "ciudad": 4.86,
-    "rio": 18.72,
+    "ciudad": 4.88,
+    "rio": 18.7,
     "noOficial": 26.26,
     "fin": 31.04
   },
@@ -16,26 +16,26 @@ window.REEL = {
     ],
     [
       3.28,
-      4.86,
+      4.88,
       "¿Dónde está más complicado?"
     ],
     [
-      4.86,
+      4.88,
       10.54,
       "En San Javier, el agua está 1,34 m por encima del nivel de evacuación"
     ],
     [
       10.54,
-      15.92,
+      15.98,
       "En Paraná, 71 cm. En Hernandarias, 42 cm"
     ],
     [
-      15.92,
-      18.72,
+      15.98,
+      18.7,
       "Y en Diamante, 35 cm"
     ],
     [
-      18.72,
+      18.7,
       24.1,
       "Reconquista, Santa Fe, La Paz, Goya y Esquina también pasaron el nivel de evacuación"
     ],
@@ -57,7 +57,7 @@ window.REEL = {
   ],
   "FICHAS": [
     [
-      4.86,
+      4.88,
       "San Javier (Santa Fe)"
     ],
     [
@@ -69,7 +69,7 @@ window.REEL = {
       "Hernandarias"
     ],
     [
-      15.92,
+      15.98,
       "Diamante"
     ]
   ]
