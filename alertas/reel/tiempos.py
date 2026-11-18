@@ -2,7 +2,8 @@
 
 Cada bloque del guion arranca en la primera palabra de su texto. Se busca esa palabra (y la
 siguiente) en la transcripción con tiempos por palabra; si no aparece, se estima por el largo
-del texto. Los subtítulos de cada bloque se reparten su tramo según el largo de cada uno.
+del texto. Cada subtítulo arranca cuando la voz dice su primera frase; si no se encuentra,
+los subtítulos del bloque se reparten el tramo según el largo de cada uno.
 """
 
 import re
@@ -61,17 +62,44 @@ def _inicios(g: Guion, palabras: Palabras, duracion: float) -> list[float]:
     return inicios
 
 
+def _frases(texto: str) -> list[str]:
+    return [f for f in re.split(r"(?<=[.?!])\s+", texto.strip()) if f]
+
+
+def _inicios_frases(voz: str, palabras: Palabras, a: float, fin: float) -> list[float] | None:
+    """Cuándo arranca cada frase de la voz dentro del tramo [a, fin), o None si alguna no aparece."""
+    tramo = [(w, s) for w, s in palabras if a - 0.05 <= s < fin]
+    normas = [_norm(w) for w, _ in tramo]
+    inicios, desde = [a], 1
+    for frase in _frases(voz)[1:]:
+        i = _buscar(normas, _ancla(frase), desde)
+        if i is None:
+            return None
+        inicios.append(tramo[i][1])
+        desde = i + 1
+    return inicios
+
+
+def _subs_bloque(b, palabras: Palabras, a: float, fin: float) -> Subs:
+    """Cada subtítulo arranca cuando la voz dice su primera frase. Si las frases de la voz y de los
+    subtítulos no se corresponden (o no se encuentran), se reparte el tramo según el largo."""
+    cuantas = [len(_frases(s)) for s in b.subs]
+    frases = _inicios_frases(b.voz, palabras, a, fin) if sum(cuantas) == len(_frases(b.voz)) else None
+    if frases:
+        arranques = [frases[sum(cuantas[:i])] for i in range(len(b.subs))]
+    else:
+        tramo = (fin - a) / (sum(len(s) for s in b.subs) or 1)
+        arranques = [a + tramo * sum(len(x) for x in b.subs[:i]) for i in range(len(b.subs))]
+    finales = arranques[1:] + [fin]
+    return [(round(x, 2), round(z, 2), s) for x, z, s in zip(arranques, finales, b.subs)]
+
+
 def calcular(g: Guion, palabras: Palabras, duracion: float) -> tuple[dict[str, float], Subs]:
     inicios = _inicios(g, palabras, duracion)
     t = {b.clave: round(s, 2) for b, s in zip(g.bloques, inicios) if b.clave != "hoy"}
     subs: Subs = []
     for k, b in enumerate(g.bloques[:-1]):
-        a, fin = inicios[k], inicios[k + 1]
-        tramo = (fin - a) / (sum(len(s) for s in b.subs) or 1)
-        for s in b.subs:
-            z = a + tramo * len(s)
-            subs.append((round(a, 2), round(z, 2), s))
-            a = z
+        subs.extend(_subs_bloque(b, palabras, inicios[k], inicios[k + 1]))
     if subs:  # el último subtítulo termina justo donde arranca la placa final
         subs[-1] = (subs[-1][0], t["fin"], subs[-1][2])
     return t, subs

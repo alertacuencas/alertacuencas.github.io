@@ -293,3 +293,22 @@ def test_ancla_del_segundo_bloque_no_cae_dentro_del_primero():
     t, _ = tiempos.calcular(gu, palabras, duracion=palabras[-1][1] + 0.5)
     costa = next(i for i, (w, _) in enumerate(palabras) if w == "Delta,") - 2
     assert t["costa"] == palabras[costa][1]
+
+
+def test_subtitulos_arrancan_cuando_la_voz_dice_su_frase():
+    # la primera frase del bloque se lee más lenta: el reparto por largo atrasaría a las siguientes
+    p = _parana(_evac("San Javier (Santa Fe)", 1.34), _evac("Paraná", 0.71), _evac("Hernandarias", 0.42),
+                _evac("Diamante", 0.35))
+    gu = g.armar(p, _estado(), None, AHORA)
+    palabras, t = [], 0.0
+    for w in gu.texto_voz.split():
+        palabras.append((w, round(t, 2)))
+        t += 0.8 if len(palabras) < 25 else 0.3
+    tt, subs = tiempos.calcular(gu, palabras, duracion=t + 0.5)
+    inicio = {s: a for a, _, s in subs}
+    en_parana = next(i for i, (w, _) in enumerate(palabras) if w == "ciudad") - 2
+    assert inicio["En Paraná, 71 cm. En Hernandarias, 42 cm"] == palabras[en_parana][1]
+    y_en = next(i for i, (w, _) in enumerate(palabras) if w == "Diamante,") - 2
+    assert inicio["Y en Diamante, 35 cm"] == palabras[y_en][1]
+    for (a, b, _), (c, _, _) in zip(subs, subs[1:]):
+        assert b == pytest.approx(c)
