@@ -1,6 +1,6 @@
 # Reel 18/11/2026
 
-**Estado:** preparado automáticamente el 18/11 a las 10:12; falta la locución.
+**Estado:** publicado el 18/11 a las 11:20 en https://www.instagram.com/alertacuencas/reel/Df4sOGiu1LW/
 **Ciudad de ejemplo:** San Javier (Santa Fe).
 
 ## Para revisar antes de grabar
@@ -38,3 +38,10 @@ Julieta - Argentine Warm & Friendly · Eleven v4 · estabilidad 50 % · similitu
 > El Paraná está en evacuación en 9 ciudades.
 
 ## Notas
+
+- Preparado desde la PC con la lectura de Prefectura de las 08:00: el respaldo del INA que usa GitHub
+  no traía San Javier (la peor, +1,34 m) y decía 8 ciudades en vez de 9.
+- Primer reel con el formato "solo lo crítico": sin San Fernando ni costa, las 4 peores con su número.
+- Se publicó una primera versión (Df4p684u8d-) con la ficha de San Javier fija mientras la voz nombraba
+  las otras ciudades; se borró y se subió esta, que cambia la ficha de cada ciudad cuando la nombra.
+
