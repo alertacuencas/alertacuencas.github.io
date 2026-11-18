@@ -6,7 +6,7 @@ window.REEL = {
     "ciudad": 4.86,
     "rio": 18.72,
     "noOficial": 26.26,
-    "fin": 31.04
+    "fin": 31.06
   },
   "SUBS": [
     [
@@ -21,26 +21,26 @@ window.REEL = {
     ],
     [
       4.86,
-      12.27,
+      10.54,
       "En San Javier, el agua está 1,34 m por encima del nivel de evacuación"
     ],
     [
-      12.27,
-      16.57,
+      10.54,
+      15.92,
       "En Paraná, 71 cm. En Hernandarias, 42 cm"
     ],
     [
-      16.57,
+      15.92,
       18.72,
       "Y en Diamante, 35 cm"
     ],
     [
       18.72,
-      23.95,
+      24.14,
       "Reconquista, Santa Fe, La Paz, Goya y Esquina también pasaron el nivel de evacuación"
     ],
     [
-      23.95,
+      24.14,
       26.26,
       "Por ahora, el río se mantiene estable"
     ],
@@ -51,7 +51,7 @@ window.REEL = {
     ],
     [
       28.22,
-      31.04,
+      31.06,
       "Ante una emergencia: Defensa Civil, 103"
     ]
   ]
