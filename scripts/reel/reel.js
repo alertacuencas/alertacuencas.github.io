@@ -6,6 +6,9 @@
   const { CIUDAD, SUBS, T } = window.REEL;
   // FICHAS = [segundo, puerto] de cada ciudad que nombra la voz en el bloque "ciudad".
   const FICHAS = window.REEL.FICHAS || [];
+  // VARIANTE alterna por día ("clasica" | "mapa") para que los reels no salgan iguales.
+  // MAPA = puertos a resaltar; OTRO = el puerto en alerta del río que nombra el "Además, …".
+  const { VARIANTE = "clasica", MAPA = [], OTRO = "" } = window.REEL;
 
   const css = document.createElement("style");
   css.textContent = `
@@ -25,6 +28,8 @@
     #reel-fin b { font-size: 40px; font-weight: 900; letter-spacing: -.01em; }
     #reel-fin .ig { font-size: 28px; font-weight: 800; color: #7fd3ff; }
     #reel-fin small { font: 600 17px "IBM Plex Mono", monospace; opacity: .8; }
+    #reel-fin.claro { background: #f3eadc; color: #1f1a14; }
+    #reel-fin.claro .ig { color: #b3261e; }
     .reel-foco { outline: 4px solid #7fd3ff !important; outline-offset: 6px; border-radius: 6px; transition: outline-color .3s; }
   `;
   document.head.append(css);
@@ -65,8 +70,27 @@
     return texto.length * 90;
   }
 
+  // ── recorrido del mapa ──
+  const enMapa = (nombres) => nombres.map((n) => marcadores.get(n)).filter(Boolean);
+  function resaltar(mks, ms) {
+    for (const mk of mks) {
+      const r = mk.getRadius();
+      mk.setRadius(r * 1.8).bringToFront();
+      setTimeout(() => mk.setRadius(r), ms);
+    }
+  }
+  function encuadrar(nombres, ms = 1600) {
+    const mks = enMapa(nombres);
+    if (!mks.length) return vista("parana");
+    mapa.flyToBounds(L.latLngBounds(mks.map((m) => m.getLatLng())), { padding: [36, 36], maxZoom: 8, duration: ms / 1000 });
+    setTimeout(() => { resaltar(mks, 3200); mks[0].openTooltip(); }, ms);
+  }
+  const ademas = (SUBS.find(([, , txt]) => txt.startsWith("Además")) || [])[0];
+  const alMapa = (ms) => desplazar(y("#mapa", 150), ms);
+  const cerrarCarteles = () => mapa.eachLayer((l) => l.closeTooltip?.());
+
   const costa = () => { const c = $("#carteles"); return c?.children[c.children.length - 2]; };
-  const PASOS = [
+  const CLASICA = [
     [0.0, () => scrollTo(0, 0)],
     [1.2, () => desplazar(y("#carteles", 150), 1800)],
     [T.costa - 0.2, () => { const c = costa(); desplazar(y(c, 160), 1100); setTimeout(() => foco(c, 2600), 900); }],
@@ -84,6 +108,23 @@
     [T.noOficial - 0.1, () => { const n = $(".no-oficial"); desplazar(y(n, 260), 1000); setTimeout(() => foco(n, 4200), 900); }],
     [T.fin - 0.1, () => { fin.style.opacity = "1"; sub.style.opacity = "0"; }],
   ];
+
+  // Variante "mapa": arranca en el mapa con las ciudades críticas, va al AMBA si hay alerta del SMN,
+  // sube a la ficha de cada ciudad y vuelve al mapa para el resto de los ríos.
+  const fichas = CLASICA.filter(([t]) => t >= T.tuCiudad - 0.1 && t < T.rio - 0.1);
+  const MAPA_PASOS = [
+    [0.0, () => scrollTo(0, 0)],
+    [0.3, () => { alMapa(900); setTimeout(() => encuadrar(MAPA, 1000), 700); }],
+    [T.costa - 0.1, () => { vista("amba"); }],
+    ...fichas,
+    [T.rio - 0.1, () => { alMapa(900); setTimeout(() => { cerrarCarteles(); vista("parana"); resaltar(enMapa(MAPA), 3000); }, 700); }],
+    ...(OTRO && Number.isFinite(ademas)
+      ? [[ademas, () => { const mk = marcadores.get(OTRO); if (mk) { cerrarCarteles(); mapa.flyTo(mk.getLatLng(), 8, { duration: 1 }); setTimeout(() => { resaltar([mk], 3000); mk.openTooltip(); }, 1000); } }]]
+      : [[T.rio + 2.5, () => desplazar(y("#escalas", 120) + 520, 2400)]]),
+    [T.noOficial - 0.1, () => { const n = $(".no-oficial"); desplazar(y(n, 260), 1000); setTimeout(() => foco(n, 4200), 900); }],
+    [T.fin - 0.1, () => { fin.classList.add("claro"); fin.style.opacity = "1"; sub.style.opacity = "0"; }],
+  ];
+  const PASOS = VARIANTE === "mapa" ? MAPA_PASOS : CLASICA;
 
   function arrancar() {
     negro.style.opacity = "0";

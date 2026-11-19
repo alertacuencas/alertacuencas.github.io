@@ -385,3 +385,28 @@ def test_con_evacuacion_y_alerta_smn_la_costa_tranquila_no_va():
         assert "tranquilo" not in texto and "San Fernando" not in texto
     assert gu.titular_portada == "El Paraná está en evacuación en 1 ciudad. Hay alerta amarilla por tormentas en el AMBA."
     assert gu.costa_nivel == ""
+
+
+def test_mapa_marca_las_ciudades_en_evacuacion_y_el_otro_rio_en_alerta(tmp_path):
+    p = _parana(_evac("Santa Fe", 0.5), _evac("Rosario", 0.2), _puerto("Goya", "alerta", 0.1),
+                _rio("Paraguay", _puerto("Isla del Cerrito", "alerta", 0.3)), _puerto("Zárate", "normal"))
+    gu = g.armar(p, _estado(), None, AHORA)
+    assert gu.mapa == ("Santa Fe", "Rosario")
+    assert gu.otro_rio == "Isla del Cerrito"
+    assert g.cargar(salida.guardar_guion(tmp_path, gu)) == gu
+
+
+def test_sin_evacuacion_el_mapa_marca_las_de_alerta():
+    gu = g.armar(_parana(_puerto("Goya", "alerta", 0.1), _puerto("Rosario", "normal")), _estado(), None, AHORA)
+    assert (gu.mapa, gu.otro_rio) == (("Goya",), "")
+
+
+def test_el_recorrido_cambia_de_un_dia_al_otro(tmp_path):
+    def variante(dia):
+        gu = g.armar(EVAC, _estado(), None, AHORA.replace(day=dia))
+        t, subs = tiempos.calcular(gu, [], duracion=25.0)
+        js = salida.reel_dia_js(tmp_path, gu, t, subs).read_text()
+        return json.loads(js.split("window.REEL = ", 1)[1].rstrip().rstrip(";"))
+    a, b = variante(18), variante(19)
+    assert (a["VARIANTE"], b["VARIANTE"]) == ("clasica", "mapa")
+    assert b["MAPA"] == ["Paraná", "Diamante", "Goya"] and b["OTRO"] == ""

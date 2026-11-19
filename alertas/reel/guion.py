@@ -41,6 +41,8 @@ class Guion:
     costa_nivel: str       # vacío si el reel no habla de la costa
     avisos: tuple[str, ...]  # cosas a revisar antes de grabar
     fichas: tuple[str, ...] = ()  # puertos que nombra el bloque "ciudad", en orden: una ficha por frase
+    mapa: tuple[str, ...] = ()    # puertos que el recorrido del mapa resalta (evacuación o, si no hay, alerta)
+    otro_rio: str = ""            # el peor puerto en alerta de un río sin evacuación ("Además, el X…")
 
     @property
     def texto_voz(self) -> str:
@@ -59,6 +61,7 @@ def cargar(ruta) -> Guion:
         posteo=d["posteo"], titular_portada=d["titular_portada"], nivel_parana=d["nivel_parana"],
         costa_nivel=d["costa_nivel"], avisos=tuple(d["avisos"]),
         fichas=tuple(d.get("fichas") or ((d["ciudad"],) if d["ciudad"] else ())),
+        mapa=tuple(d.get("mapa", ())), otro_rio=d.get("otro_rio", ""),
     )
 
 
@@ -271,10 +274,16 @@ def _tendencia(peores: list[dict]) -> str:
     return ""
 
 
+def _alerta_otros_rios(parana: dict | None, peores: list[dict]) -> list[dict]:
+    """Puertos en alerta de los ríos que no tienen ciudades en evacuación, del más grave al menos."""
+    con_evac = {resumen.cuenca(p) for p in peores}
+    return sorted((p for p in _por_nombre(parana).values()
+                   if p["nivel"] == "alerta" and resumen.cuenca(p) not in con_evac), key=resumen._gravedad)
+
+
 def _ademas_alerta(parana: dict | None, peores: list[dict]) -> str:
     """Los ríos que no tienen ciudades en evacuación pero sí en alerta, sin nombrar ciudades."""
-    con_evac = {resumen.cuenca(p) for p in peores}
-    alerta = [p for p in _por_nombre(parana).values() if p["nivel"] == "alerta" and resumen.cuenca(p) not in con_evac]
+    alerta = _alerta_otros_rios(parana, peores)
     rios = [f"el {c}" for c, _ in resumen.por_cuenca(alerta)]
     if not rios:
         return ""
@@ -368,7 +377,14 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         titular_portada=_titular(parana, costa_titular if con_costa else "", smn),
         nivel_parana=nivel, costa_nivel=costa_nivel_portada if con_costa else "", avisos=_avisos(parana, costa_nivel, ahora),
         fichas=tuple(x["puerto"] for x in peores[:MAX_PEORES]) if peores else ((p["puerto"],) if p else ()),
+        mapa=_mapa(parana, evac, alerta),
+        otro_rio=next((x["puerto"] for x in _alerta_otros_rios(parana, peores)), "") if peores else "",
     )
+
+
+def _mapa(parana: dict | None, evac: list[str], alerta: list[str]) -> tuple[str, ...]:
+    nombres = set(evac or alerta)
+    return tuple(p["puerto"] for p in sorted(_por_nombre(parana).values(), key=resumen._gravedad) if p["puerto"] in nombres)
 
 
 def _titular(parana: dict | None, costa_titular: str, smn: tuple[str, str]) -> str:
