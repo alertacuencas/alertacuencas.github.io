@@ -16,6 +16,16 @@ mkdir -p "$SITIO/data"
 cp "$DATOS"/*.json "$SITIO/data/"
 cp "$RAIZ/web/data/zonas.geojson" "$SITIO/data/" 2>/dev/null || true
 cp "$RAIZ/scripts/reel/reel.js" "$DIA/reel-dia.js" "$SITIO"/
+# Leaflet se baja antes y se sirve local: si unpkg falla durante la toma, el mapa queda en blanco y
+# app.js se corta ("Cargando…", fichas vacías). El 19/11 salió así un video entero.
+for archivo in leaflet.js leaflet.css; do
+  url="https://unpkg.com/leaflet@1.9.4/dist/$archivo"
+  hash=$(grep -A1 -F "$url" "$SITIO/index.html" | grep -o 'sha256-[A-Za-z0-9+/=]*')
+  curl -fsSL --retry 4 --retry-all-errors -o "$SITIO/$archivo" "$url"
+  [ "sha256-$(openssl dgst -sha256 -binary "$SITIO/$archivo" | base64)" = "$hash" ] \
+    || { echo "no coincide la huella de $archivo" >&2; exit 1; }
+  sed -i "s|$url|$archivo|" "$SITIO/index.html"
+done
 # El reloj de la página arranca en el momento en que se preparó el guion (ahora.txt): la web se ve
 # igual que cuando se escribió lo que dice la voz ("actualizado hace X minutos", fecha de hoy).
 AHORA=$(tr -d '[:space:]' < "$DIA/ahora.txt")
