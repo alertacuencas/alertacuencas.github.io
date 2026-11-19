@@ -372,3 +372,16 @@ def test_solo_alerta_en_otro_rio():
     assert b["hoy"].voz == "Hoy, el Paraguay está en alerta en Isla del Cerrito."
     assert b["ciudad"].voz.startswith("En Isla del Cerrito, sobre el Paraguay,")
     assert b["rio"].voz == "Acá están todos los ríos, de lo más grave a lo más tranquilo."
+
+
+def test_con_evacuacion_y_alerta_smn_la_costa_tranquila_no_va():
+    """19/11: nueve ciudades en evacuación y alerta amarilla; el reel decía 'el río está tranquilo'."""
+    delta = _puerto("San Fernando", "normal", rio="PARANADELASPALMAS")
+    gu = g.armar(_parana(_puerto("Goya", "evacuacion", 0.2), delta), _estado("amarillo"),
+                 _serie(0.8, "2026-11-17T12:30:00+00:00"), AHORA)
+    costa = next(b for b in gu.bloques if b.clave == "costa")
+    assert costa.voz == "El Servicio Meteorológico tiene alerta amarilla por tormentas en el AMBA."
+    for texto in (gu.texto_voz, gu.posteo, gu.titular_portada):
+        assert "tranquilo" not in texto and "San Fernando" not in texto
+    assert gu.titular_portada == "El Paraná está en evacuación en 1 ciudad. Hay alerta amarilla por tormentas en el AMBA."
+    assert gu.costa_nivel == ""

@@ -295,10 +295,20 @@ def _resto_critico(peores: list[dict], parana: dict | None = None) -> tuple[str,
     return (" ".join(x for x in (voz, tendencia, ademas) if x), " ".join(x for x in (sub, tendencia, ademas) if x))
 
 
-def _costa_critica(costa_nivel: str, parana: dict | None, smn: tuple[str, str]) -> bool:
-    """Con el Paraná en evacuación, la costa entra solo si el Delta está en alerta o hay alerta del SMN."""
-    delta = any(p.get("rio") in resumen.RIOS_DELTA and p["nivel"] != "normal" for p in _por_nombre(parana).values())
-    return delta or smn[0] not in ("verde", "sin")
+def _delta_critico(parana: dict | None) -> bool:
+    return any(p.get("rio") in resumen.RIOS_DELTA and p["nivel"] != "normal" for p in _por_nombre(parana).values())
+
+
+def _costa_critica(costa: tuple[str, str, str, str], parana: dict | None,
+                   smn: tuple[str, str]) -> tuple[str, str, str, str] | None:
+    """Con el Paraná en evacuación entra solo lo crítico de la costa: el Delta en alerta (con la del SMN, si
+    hay) o, si no, solo la alerta del SMN; nunca 'el río está tranquilo' ni la sudestada de San Fernando."""
+    if _delta_critico(parana):
+        return costa
+    if smn[0] not in ("verde", "sin"):
+        frase = f"El Servicio Meteorológico tiene {SMN_TXT[smn[0]]} por {smn[1]} en el AMBA."
+        return "", frase, frase, ""
+    return None
 
 
 def _avisos(parana: dict | None, costa_nivel: str, ahora: datetime) -> tuple[str, ...]:
@@ -322,14 +332,17 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
     nivel, evac, alerta, _ = resumen._parana(parana)
     smn = _vigentes(estado, ahora)
     hoy_voz, hoy_sub = _hoy(parana, nivel)
-    costa_nivel, costa_voz, costa_sub, costa_titular = _costa(parana, serie, smn, ahora)
+    costa = _costa(parana, serie, smn, ahora)
+    costa_nivel = costa[0]
     p = _elegir_ciudad(parana, evac, alerta)
     if evac:  # solo lo crítico: las ciudades en evacuación, de la peor a la menos grave
         peores = _peores(parana, evac)
         ciudad_voz, ciudad_subs = _ciudades_criticas(peores)
         rio_voz, rio_sub = _resto_critico(peores, parana)
         pregunta = "¿Dónde está más complicado?"
-        con_costa = _costa_critica(costa_nivel, parana, smn)
+        critica = _costa_critica(costa, parana, smn)
+        con_costa = critica is not None
+        costa = critica or costa
     else:
         ciudad_voz, ciudad_sub = _ciudad(p)
         ciudad_subs = (ciudad_sub[:-1],)
@@ -338,6 +351,7 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         rio_sub = rio_voz
         pregunta = "¿Y en tu ciudad?"
         peores, con_costa = [], True
+    costa_nivel_portada, costa_voz, costa_sub, costa_titular = costa
     bloques = (
         Bloque("hoy", hoy_voz, _partir(hoy_sub)),
         *((Bloque("costa", costa_voz, _partir(costa_sub)),) if con_costa else ()),
@@ -352,7 +366,7 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         fecha=ahora.astimezone(ART), ciudad=p["puerto"] if p else "", bloques=bloques,
         posteo=_posteo(parana, alerta, costa_sub if con_costa else "", peores),
         titular_portada=_titular(parana, costa_titular if con_costa else "", smn),
-        nivel_parana=nivel, costa_nivel=costa_nivel if con_costa else "", avisos=_avisos(parana, costa_nivel, ahora),
+        nivel_parana=nivel, costa_nivel=costa_nivel_portada if con_costa else "", avisos=_avisos(parana, costa_nivel, ahora),
         fichas=tuple(x["puerto"] for x in peores[:MAX_PEORES]) if peores else ((p["puerto"],) if p else ()),
     )
 
