@@ -149,7 +149,7 @@ function porCuenca(ps) {
 }
 const ciudades = (n) => `${n} ${n === 1 ? "ciudad" : "ciudades"}`;
 // "El Paraná está en <em>evacuación</em> en 8 ciudades y el Uruguay en 1."
-function fraseNivel(ps, nivel) {
+function fraseNivelRios(ps, nivel) {
   const [[c0, ps0], ...resto] = porCuenca(ps);
   const otros = resto.map(([c, x]) => `el ${c} en ${x.length}`);
   const fin = otros.length > 1 ? `, ${otros.slice(0, -1).join(", ")} y ${otros.at(-1)}` : otros.length ? ` y ${otros[0]}` : "";
@@ -159,9 +159,9 @@ function titularRios(P) {
   if (P.evac.length) {
     const conEvac = new Set(P.evac.map(cuenca));
     const soloAlerta = P.alerta.filter((p) => !conEvac.has(cuenca(p)));
-    return [...fraseNivel(P.evac, "evacuacion"), ...(soloAlerta.length ? fraseNivel(soloAlerta, "alerta") : [])];
+    return [...fraseNivelRios(P.evac, "evacuacion"), ...(soloAlerta.length ? fraseNivelRios(soloAlerta, "alerta") : [])];
   }
-  if (P.alerta.length) return fraseNivel(P.alerta, "alerta");
+  if (P.alerta.length) return fraseNivelRios(P.alerta, "alerta");
   if (P.ps.length) return [P.ps.every((p) => cuenca(p) === CUENCA_DEFECTO) ? "El Paraná está normal. " : "Los ríos están normales. "];
   return [];
 }
