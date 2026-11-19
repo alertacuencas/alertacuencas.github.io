@@ -40,3 +40,5 @@ Julieta - Argentine Warm & Friendly · Eleven v4 · estabilidad 50 % · similitu
 > El Paraná está en evacuación en 9 ciudades. El Paraguay está en alerta en 1 ciudad. Hay alerta amarilla por tormentas en el AMBA.
 
 ## Notas
+- Publicado el 19/11 a las 12:00: https://www.instagram.com/reel/Df7WKxru85r/ (recorrido "mapa").
+- La primera toma salió con la web sin cargar (unpkg no respondió en el runner); se rearmó y ahora la toma usa Leaflet local.
