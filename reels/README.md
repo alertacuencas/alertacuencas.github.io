@@ -95,6 +95,9 @@ Probar en la PC: `uv run python -m alertas.reel preparar --datos web/data --dia 
 - **El link no es clickeable** ni en el reel ni en el texto del posteo. La dirección
   `alertacuencas.github.io` va escrita en la placa final y en el texto, con "(link en el perfil)".
 - **Texto para la voz:** liso, con "Etiquetar automáticamente" apagado (ver arriba).
+- **Voz corta (desde el 21/11):** el plan gratis de ElevenLabs da 10.000 créditos por mes (1 por letra), o sea
+  unas 280 letras por día. La voz nombra solo la ciudad más complicada; las demás, la tendencia y el detalle
+  van en pantalla y en el posteo. Generar la voz una sola vez por día: si hay que rehacer el guion, antes.
 - **Antes de grabar**, cerrar servidores viejos del puerto 8791 (el 17/11 seguía abierto el
   del día anterior, con datos viejos) y no usar la pantalla durante la toma.
 - **Lo que cambia cada día** va en `reels/AAAA-MM-DD/reel-dia.js` (ciudad, subtítulos y

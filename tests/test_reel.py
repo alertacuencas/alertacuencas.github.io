@@ -71,14 +71,13 @@ def test_guion_con_ciudades_en_evacuacion():
     gu = g.armar(EVAC, _estado(), None, AHORA)
     voz = gu.texto_voz
     # solo lo crítico: sin rango de ciudades, sin las de alerta y sin la costa tranquila
-    assert voz.startswith("Hoy, tres ciudades del Paraná están en evacuación. ¿Dónde está más complicado?")
+    assert voz.startswith("Hoy, tres ciudades del Paraná están en evacuación. ¿Dónde está peor?")
     assert "Desde" not in voz and "tranquilo" not in voz and "alerta" not in voz
-    # la ficha es la que más pasó el nivel de evacuación, y después las que siguen
+    # la voz nombra solo la que más pasó el nivel de evacuación (créditos de ElevenLabs)
     assert gu.ciudad == "Paraná"
-    assert ("En la ciudad de Paraná, el agua está sesenta y nueve centímetros por encima del nivel de evacuación. "
-            "En Diamante, treinta y dos centímetros. Y en Goya, once centímetros.") in voz
-    assert "Acá está todo el Paraná. Por ahora, el río se mantiene estable." in voz
-    assert voz.endswith("No somos un sistema oficial: ante una emergencia, Defensa Civil, ciento tres. Seguí a Alerta Cuencas.")
+    assert "En la ciudad de Paraná, está sesenta y nueve centímetros arriba del nivel de evacuación. Acá, todo el Paraná." in voz
+    assert "Diamante" not in voz and "Goya" not in voz
+    assert voz.endswith("No es oficial. Emergencias, ciento tres. Seguí a Alerta Cuencas.")
     assert not any(c.isdigit() for c in voz)  # la voz va con números en letras
 
 
@@ -86,7 +85,8 @@ def test_subtitulos_con_numeros_y_cortos():
     gu = g.armar(EVAC, _estado(), None, AHORA)
     subs = [s for b in gu.bloques for s in b.subs]
     assert "Hoy, 3 ciudades del Paraná están en evacuación" in subs
-    assert any("69 cm por encima del nivel de evacuación" in s for s in subs)
+    assert any("69 cm arriba del nivel de evacuación" in s for s in subs)
+    assert "Emergencias: Defensa Civil, 103" in subs
     assert all(len(s) <= 80 for s in subs)
 
 
@@ -101,34 +101,42 @@ def _evac(nombre, exceso, tendencia="estable"):
     return _puerto(nombre, "evacuacion", exceso) | {"tendencia": tendencia}
 
 
-def test_evacuacion_nombra_las_cuatro_peores_y_despues_el_resto():
+def test_evacuacion_nombra_solo_la_peor_y_el_posteo_las_cuatro_peores():
     p = _parana(_evac("Goya", 0.06), _evac("San Javier (Santa Fe)", 1.34), _evac("Paraná", 0.71),
                 _evac("Hernandarias", 0.42), _evac("Diamante", 0.35), _evac("Reconquista", 0.29),
                 _evac("Santa Fe", 0.16), _puerto("Victoria", "alerta", 0.14))
     gu = g.armar(p, _estado(), None, AHORA)
     assert gu.ciudad == "San Javier (Santa Fe)"
     ciudad = next(b for b in gu.bloques if b.clave == "ciudad")
-    assert ciudad.voz == ("En San Javier, el agua está un metro con treinta y cuatro centímetros por encima del nivel de "
-                          "evacuación. En la ciudad de Paraná, setenta y un centímetros. En Hernandarias, cuarenta y dos "
-                          "centímetros. Y en Diamante, treinta y cinco centímetros.")
-    assert "En Paraná, 71 cm" in " ".join(ciudad.subs)
+    assert ciudad.voz == "En San Javier, está un metro con treinta y cuatro centímetros arriba del nivel de evacuación."
+    assert ciudad.subs == ("En San Javier, está 1,34 m arriba del nivel de evacuación",)
     rio = next(b for b in gu.bloques if b.clave == "rio")
-    assert rio.voz == "Reconquista, Santa Fe y Goya también pasaron el nivel de evacuación. Por ahora, el río se mantiene estable."
+    assert rio.voz == "Acá, todo el Paraná."
     assert gu.texto_voz.startswith("Hoy, siete ciudades del Paraná están en evacuación.")
     assert "Victoria" not in gu.texto_voz
     assert "Lo más grave: San Javier (+1,34 m), Paraná (+71 cm), Hernandarias (+42 cm) y Diamante (+35 cm)." in gu.posteo
+
+
+def test_la_voz_entra_en_los_creditos_del_plan_gratis():
+    """10.000 créditos por mes de ElevenLabs = unas 280 letras por día; el día típico no pasa de 290 y el peor caso de MAX_VOZ."""
+    p = _parana(*(_evac(f"Ciudad {i}", 0.1 * i + 0.37) for i in range(9)),
+                _rio("Uruguay", _evac("Concepción del Uruguay", 0.77)),
+                _rio("Paraguay", _puerto("Isla del Cerrito", "alerta", 0.3)))
+    gu = g.armar(p, _estado("naranja"), None, AHORA)
+    assert len(gu.texto_voz) <= g.MAX_VOZ, gu.texto_voz
+    assert len(g.armar(EVAC, _estado("amarillo"), None, AHORA).texto_voz) <= 290
 
 
 @pytest.mark.parametrize("tendencias, frase", [
     (["sube", "sube", "estable"], "En la mayoría, el río sigue subiendo."),
     (["baja", "baja", "sube"], "En la mayoría, el río ya empieza a bajar."),
     (["estable", "estable", "sube"], "Por ahora, el río se mantiene estable."),
-    (["sube", "baja", "estable"], ""),
 ])
-def test_tendencia_de_las_ciudades_en_evacuacion(tendencias, frase):
+def test_tendencia_de_las_ciudades_en_evacuacion_va_en_el_posteo(tendencias, frase):
     p = _parana(*(_evac(n, 0.1 * (i + 1), t) for i, (n, t) in enumerate(zip(["Goya", "Esquina", "La Paz"], tendencias))))
-    rio = next(b for b in g.armar(p, _estado(), None, AHORA).bloques if b.clave == "rio")
-    assert rio.voz.endswith(frase or "Acá está todo el Paraná.")
+    gu = g.armar(p, _estado(), None, AHORA)
+    assert frase in gu.posteo
+    assert frase not in gu.texto_voz
 
 
 def test_sin_evacuacion_usa_alerta():
@@ -147,9 +155,9 @@ def test_todo_normal():
 
 def test_alerta_smn_vigente_se_menciona_y_la_vencida_no():
     vigente = g.armar(EVAC, _estado("naranja"), None, AHORA)
-    assert "El Servicio Meteorológico tiene alerta naranja por tormentas en el AMBA." in vigente.texto_voz
+    assert "Hay alerta naranja por tormentas en el AMBA." in vigente.texto_voz
     vencida = g.armar(EVAC, _estado("amarillo", expira="2026-11-17T11:59:59+00:00"), None, AHORA)
-    assert "Servicio Meteorológico" not in vencida.texto_voz
+    assert "por tormentas" not in vencida.texto_voz
     assert "alerta amarilla" not in vencida.titular_portada
 
 
@@ -183,7 +191,7 @@ def test_tiempos_alinea_cada_bloque_con_la_transcripcion():
     t, subs = tiempos.calcular(gu, palabras, duracion=palabras[-1][1] + 0.5)
     inicio = {w: s for w, s in palabras}
     assert t["tuCiudad"] == inicio["¿Dónde"]
-    assert t["rio"] == inicio["Acá"]
+    assert t["rio"] == inicio["Acá,"]
     assert t["noOficial"] == inicio["No"]
     assert t["fin"] == inicio["Seguí"]
     assert subs[0][0] == 0.0
@@ -275,7 +283,7 @@ def test_nombres_de_puertos_limpios_en_la_voz():
     p = _parana(_puerto("San Lorenzo (San Martín)", "evacuacion", 0.2), _puerto("Paraná", "evacuacion", 0.1))
     voz = g.armar(p, _estado(), None, AHORA).texto_voz
     assert "(" not in voz
-    assert "En San Lorenzo, el agua está" in voz
+    assert "En San Lorenzo, está" in voz
 
 
 def test_guion_se_guarda_y_se_recupera_igual(tmp_path):
@@ -296,20 +304,15 @@ def test_ancla_del_segundo_bloque_no_cae_dentro_del_primero():
 
 
 def test_subtitulos_arrancan_cuando_la_voz_dice_su_frase():
-    # la primera frase del bloque se lee más lenta: el reparto por largo atrasaría a las siguientes
-    p = _parana(_evac("San Javier (Santa Fe)", 1.34), _evac("Paraná", 0.71), _evac("Hernandarias", 0.42),
-                _evac("Diamante", 0.35))
-    gu = g.armar(p, _estado(), None, AHORA)
+    gu = g.armar(EVAC, _estado(), None, AHORA)
     palabras, t = [], 0.0
     for w in gu.texto_voz.split():
         palabras.append((w, round(t, 2)))
         t += 0.8 if len(palabras) < 25 else 0.3
     tt, subs = tiempos.calcular(gu, palabras, duracion=t + 0.5)
     inicio = {s: a for a, _, s in subs}
-    en_parana = next(i for i, (w, _) in enumerate(palabras) if w == "ciudad") - 2
-    assert inicio["En Paraná, 71 cm. En Hernandarias, 42 cm"] == palabras[en_parana][1]
-    y_en = next(i for i, (w, _) in enumerate(palabras) if w == "Diamante,") - 2
-    assert inicio["Y en Diamante, 35 cm"] == palabras[y_en][1]
+    emergencias = next(i for i, (w, _) in enumerate(palabras) if w == "Emergencias,")
+    assert inicio["Emergencias: Defensa Civil, 103"] == palabras[emergencias][1]
     for (a, b, _), (c, _, _) in zip(subs, subs[1:]):
         assert b == pytest.approx(c)
 
@@ -322,7 +325,7 @@ def _siete():
 
 def test_fichas_son_las_ciudades_que_nombra_la_voz():
     gu = g.armar(_siete(), _estado(), None, AHORA)
-    assert gu.fichas == ("San Javier (Santa Fe)", "Paraná", "Hernandarias", "Diamante")
+    assert gu.fichas == ("San Javier (Santa Fe)",)
     normal = g.armar(_parana(_puerto("Rosario", "normal")), _estado(), None, AHORA)
     assert normal.fichas == ("Rosario",)
 
@@ -333,9 +336,7 @@ def test_cada_ficha_aparece_cuando_la_voz_nombra_su_ciudad(tmp_path):
     t, subs = tiempos.calcular(gu, palabras, duracion=palabras[-1][1] + 0.5)
     fichas = tiempos.fichas(gu, palabras, t)
     assert [p for _, p in fichas] == list(gu.fichas)
-    assert fichas[0][0] == t["ciudad"]
-    en_la = next(i for i, (w, _) in enumerate(palabras) if w == "ciudad" and palabras[i + 2][0].startswith("Paraná")) - 2
-    assert fichas[1][0] == palabras[en_la][1]
+    assert fichas == [(t["ciudad"], "San Javier (Santa Fe)")]
     js = salida.reel_dia_js(tmp_path, gu, t, subs, fichas).read_text()
     datos = json.loads(js.split("window.REEL = ", 1)[1].rstrip().rstrip(";"))
     assert datos["FICHAS"] == [[a, p] for a, p in fichas]
@@ -357,9 +358,9 @@ def test_varios_rios_en_evacuacion_de_lo_mas_grave_a_lo_menos():
     gu = g.armar(p, _estado(), None, AHORA)
     b = {x.clave: x for x in gu.bloques}
     assert b["hoy"].voz == "Hoy, tres ciudades están en evacuación: una sobre el Uruguay y dos sobre el Paraná."
-    assert b["ciudad"].voz.startswith("En San Javier, sobre el Uruguay, el agua está")
-    assert gu.fichas == ("San Javier", "Santa Fe", "Rosario")
-    assert b["rio"].voz.endswith("Además, el Paraguay está en alerta."), "el Paraná ya se nombró por su evacuación"
+    assert b["ciudad"].voz.startswith("En San Javier, sobre el Uruguay, está")
+    assert gu.fichas == ("San Javier",)
+    assert b["rio"].voz == "Además, el Paraguay está en alerta.", "el Paraná ya se nombró por su evacuación"
     assert gu.titular_portada.startswith("El Uruguay está en evacuación en 1 ciudad y el Paraná en 2. "
                                          "El Paraguay está en alerta en 1 ciudad.")
     assert "San Javier, sobre el Uruguay (+90 cm)" in gu.posteo
@@ -371,7 +372,7 @@ def test_solo_alerta_en_otro_rio():
     b = {x.clave: x for x in gu.bloques}
     assert b["hoy"].voz == "Hoy, el Paraguay está en alerta en Isla del Cerrito."
     assert b["ciudad"].voz.startswith("En Isla del Cerrito, sobre el Paraguay,")
-    assert b["rio"].voz == "Acá están todos los ríos, de lo más grave a lo más tranquilo."
+    assert b["rio"].voz == "Acá, todos los ríos."
 
 
 def test_con_evacuacion_y_alerta_smn_la_costa_tranquila_no_va():
@@ -380,7 +381,7 @@ def test_con_evacuacion_y_alerta_smn_la_costa_tranquila_no_va():
     gu = g.armar(_parana(_puerto("Goya", "evacuacion", 0.2), delta), _estado("amarillo"),
                  _serie(0.8, "2026-11-17T12:30:00+00:00"), AHORA)
     costa = next(b for b in gu.bloques if b.clave == "costa")
-    assert costa.voz == "El Servicio Meteorológico tiene alerta amarilla por tormentas en el AMBA."
+    assert costa.voz == "Hay alerta amarilla por tormentas en el AMBA."
     for texto in (gu.texto_voz, gu.posteo, gu.titular_portada):
         assert "tranquilo" not in texto and "San Fernando" not in texto
     assert gu.titular_portada == "El Paraná está en evacuación en 1 ciudad. Hay alerta amarilla por tormentas en el AMBA."

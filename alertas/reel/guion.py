@@ -18,7 +18,11 @@ URL = "alertacuencas.github.io"
 MAX_SUB = 52            # caracteres por subtítulo antes de partirlo
 UMBRAL_SUDESTADA = 0.5  # m sobre la marea en San Fernando para mencionarlo
 MAX_EDAD_RESIDUO = timedelta(hours=6)
-MAX_PEORES = 4          # ciudades en evacuación que se nombran con su número
+MAX_PEORES = 4          # ciudades en evacuación que el posteo nombra con su número
+# Plan gratis de ElevenLabs: 10.000 créditos por mes (1 por letra). Con un reel por día, la voz tiene que
+# rondar las 280 letras: nombra solo la ciudad más complicada; el resto queda en pantalla y en el posteo.
+MAX_PEORES_VOZ = 1
+MAX_VOZ = 340           # tope del peor caso (varios ríos, alerta SMN y otro río en alerta); lo controla un test
 SMN_GRAVEDAD = resumen.SMN_GRAVEDAD
 SMN_TXT = resumen.SMN_TXT
 
@@ -199,7 +203,7 @@ def _costa(parana: dict | None, serie: dict | None, smn: tuple[str, str], ahora:
         nivel = "sin"
     nivel_smn, evento = smn
     if nivel_smn not in ("verde", "sin"):
-        extra = f" El Servicio Meteorológico tiene {SMN_TXT[nivel_smn]} por {evento} en el AMBA."
+        extra = f" Hay {SMN_TXT[nivel_smn]} por {evento} en el AMBA."
         voz += extra
         sub += extra
     return nivel, voz, sub, titular
@@ -224,8 +228,8 @@ def _ciudad(p: dict | None) -> tuple[str, str]:
         if round(d * 100) == 0:
             return (f"En {nombre}, el agua está justo en el nivel de evacuación.",
                     f"En {nombre_sub}, el agua está justo en el nivel de evacuación.")
-        resto = "por encima del nivel de evacuación."
-        return (f"En {nombre}, el agua está {distancia_voz(d)} {resto}", f"En {nombre_sub}, el agua está {distancia_sub(d)} {resto}")
+        resto = "arriba del nivel de evacuación."
+        return (f"En {nombre}, está {distancia_voz(d)} {resto}", f"En {nombre_sub}, está {distancia_sub(d)} {resto}")
     if p["nivel"] == "alerta":
         d = p["evacuacion"] - p["altura"]
         resto = "del nivel de evacuación."
@@ -253,7 +257,7 @@ def _ciudades_criticas(peores: list[dict]) -> tuple[str, tuple[str, ...]]:
     """La peor con la frase completa y las que siguen con su número: (voz, subtítulos)."""
     primera_voz, primera_sub = _ciudad(peores[0])
     voces, subs = [primera_voz], [primera_sub]
-    resto = peores[1:MAX_PEORES]
+    resto = peores[1:MAX_PEORES_VOZ]
     for i, p in enumerate(resto):
         y = "Y en" if i == len(resto) - 1 else "En"
         d = p["altura"] - p["evacuacion"]
@@ -291,17 +295,11 @@ def _ademas_alerta(parana: dict | None, peores: list[dict]) -> str:
 
 
 def _resto_critico(peores: list[dict], parana: dict | None = None) -> tuple[str, str]:
-    """Las demás ciudades en evacuación, la tendencia y los ríos en alerta: (voz, subtítulo)."""
-    resto = peores[MAX_PEORES:]
-    tendencia = _tendencia(peores)
-    if resto:
-        verbo = "también pasó" if len(resto) == 1 else "también pasaron"
-        voz = f"{resumen.enumerar([_nombre_voz(p['puerto']) for p in resto])} {verbo} el nivel de evacuación."
-        sub = f"{resumen.enumerar([_nombre_sub(p['puerto']) for p in resto])} {verbo} el nivel de evacuación."
-    else:
-        voz = sub = "Acá está todo el Paraná." if _solo_parana(parana) else "Acá están todos los ríos."
+    """Los ríos en alerta sin evacuación o, si no hay, la invitación a ver el resto: (voz, subtítulo).
+    Las demás ciudades y la tendencia van en pantalla y en el posteo, no en la voz (créditos)."""
     ademas = _ademas_alerta(parana, peores)
-    return (" ".join(x for x in (voz, tendencia, ademas) if x), " ".join(x for x in (sub, tendencia, ademas) if x))
+    voz = ademas or ("Acá, todo el Paraná." if _solo_parana(parana) else "Acá, todos los ríos.")
+    return voz, voz
 
 
 def _delta_critico(parana: dict | None) -> bool:
@@ -315,7 +313,7 @@ def _costa_critica(costa: tuple[str, str, str, str], parana: dict | None,
     if _delta_critico(parana):
         return costa
     if smn[0] not in ("verde", "sin"):
-        frase = f"El Servicio Meteorológico tiene {SMN_TXT[smn[0]]} por {smn[1]} en el AMBA."
+        frase = f"Hay {SMN_TXT[smn[0]]} por {smn[1]} en el AMBA."
         return "", frase, frase, ""
     return None
 
@@ -348,15 +346,14 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         peores = _peores(parana, evac)
         ciudad_voz, ciudad_subs = _ciudades_criticas(peores)
         rio_voz, rio_sub = _resto_critico(peores, parana)
-        pregunta = "¿Dónde está más complicado?"
+        pregunta = "¿Dónde está peor?"
         critica = _costa_critica(costa, parana, smn)
         con_costa = critica is not None
         costa = critica or costa
     else:
         ciudad_voz, ciudad_sub = _ciudad(p)
         ciudad_subs = (ciudad_sub[:-1],)
-        rio_voz = ("Acá está todo el Paraná" if _solo_parana(parana) else "Acá están todos los ríos") \
-            + ", de lo más grave a lo más tranquilo."
+        rio_voz = "Acá, todo el Paraná." if _solo_parana(parana) else "Acá, todos los ríos."
         rio_sub = rio_voz
         pregunta = "¿Y en tu ciudad?"
         peores, con_costa = [], True
@@ -367,8 +364,8 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         Bloque("tuCiudad", pregunta, (pregunta,)),
         Bloque("ciudad", ciudad_voz, ciudad_subs),
         Bloque("rio", rio_voz, _partir(rio_sub)),
-        Bloque("noOficial", "No somos un sistema oficial: ante una emergencia, Defensa Civil, ciento tres.",
-               ("No somos un sistema oficial", "Ante una emergencia: Defensa Civil, 103")),
+        Bloque("noOficial", "No es oficial. Emergencias, ciento tres.",
+               ("No es un sistema oficial", "Emergencias: Defensa Civil, 103")),
         Bloque("fin", "Seguí a Alerta Cuencas.", ()),
     )
     return Guion(
@@ -376,7 +373,7 @@ def armar(parana: dict | None, estado: dict | None, serie: dict | None, ahora: d
         posteo=_posteo(parana, alerta, costa_sub if con_costa else "", peores),
         titular_portada=_titular(parana, costa_titular if con_costa else "", smn),
         nivel_parana=nivel, costa_nivel=costa_nivel_portada if con_costa else "", avisos=_avisos(parana, costa_nivel, ahora),
-        fichas=tuple(x["puerto"] for x in peores[:MAX_PEORES]) if peores else ((p["puerto"],) if p else ()),
+        fichas=tuple(x["puerto"] for x in peores[:MAX_PEORES_VOZ]) if peores else ((p["puerto"],) if p else ()),
         mapa=_mapa(parana, evac, alerta),
         otro_rio=next((x["puerto"] for x in _alerta_otros_rios(parana, peores)), "") if peores else "",
     )
@@ -401,6 +398,8 @@ def _posteo(parana: dict | None, alerta: list[str], costa_sub: str, peores: list
     if peores:
         grave = [f"{_lugar_sub(p)} (+{_exceso_sub(p['altura'] - p['evacuacion'])})" for p in peores[:MAX_PEORES]]
         lineas.append(f"Lo más grave: {resumen.enumerar(grave)}.")
+        if tendencia := _tendencia(peores):
+            lineas.append(tendencia)
     elif alerta:
         lineas.append(f"En alerta: {resumen.enumerar(alerta)}.")
     if costa_sub:
