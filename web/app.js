@@ -12,7 +12,8 @@ const GRAVEDAD = { evacuacion: 0, alerta: 1, normal: 2 };
 const SMN_GRAVEDAD = { rojo: 0, naranja: 1, amarillo: 2, verde: 3 };
 const SMN_TXT = { rojo: "Alerta roja", naranja: "Alerta naranja", amarillo: "Alerta amarilla", verde: "Sin alertas" };
 const NIVEL_TXT = { evacuacion: "Evacuación", alerta: "Alerta", normal: "Normal" };
-const RIOS_DELTA = new Set(["PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA", "IBICUY"]);
+const RIOS_DELTA = new Set(["PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA", "IBICUY",
+  "BARADERO", "CANALGAFOTRE", "CHANA", "LUJAN"]); // misma lista que alertas/publicar/resumen.py
 const ATAJOS = ["Santa Fe", "Paraná", "Rosario", "Corrientes", "Costa y Delta", "Matanza-Riachuelo"];
 const NORMALES_VISIBLES = 5;
 const TZ = "America/Argentina/Buenos_Aires";
@@ -136,7 +137,7 @@ function resumenLluvia() {
 }
 
 // Ríos: misma regla que alertas/publicar/resumen.py (titular_rios). Lo más grave primero.
-const CUENCA_DEFECTO = "Paraná"; // el respaldo del INA solo trae el Paraná y no marca la cuenca
+const CUENCA_DEFECTO = "Paraná"; // datos viejos sin cuenca: eran todos del Paraná
 const cuenca = (p) => p.cuenca || CUENCA_DEFECTO;
 const conRio = (p) => (cuenca(p) === CUENCA_DEFECTO ? p.puerto : `${p.puerto} (${cuenca(p)})`);
 function porCuenca(ps) {

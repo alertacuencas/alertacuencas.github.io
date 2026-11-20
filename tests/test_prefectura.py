@@ -118,7 +118,38 @@ def test_series_ina_un_puerto_por_nombre_de_norte_a_sur(fixture_text):
     assert nombres.index("Santa Ana") < nombres.index("Posadas") < nombres.index("Itatí"), "orden del río, no latitud"
     santa_fe = next(s for s in series if s.puerto == "Santa Fe")
     assert (santa_fe.id, santa_fe.alerta, santa_fe.evacuacion) == (30, 5.3, 5.7)
-    assert {s.rio for s in series} <= prefectura.RIOS_INA  # ni el Uruguay ni Yacyretá sin umbral
+    assert {s.rio for s in series} <= prefectura.RIOS_INA
+
+
+def test_series_ina_traen_los_otros_rios_con_la_cuenca_de_prefectura(fixture_text):
+    series = {s.puerto: s for s in prefectura.parse_series_ina(fixture_text("ina_series_alturas_prefe.json"))}
+
+    assert series["Concordia"].cuenca == "Uruguay"
+    assert series["Paso de los Libres"].cuenca == "Uruguay"
+    assert series["Paranacito"].cuenca == "Uruguay", "Villa Paranacito, con el nombre de Prefectura"
+    assert series["Formosa"].cuenca == "Paraguay" and series["Pilcomayo"].cuenca == "Paraguay"
+    assert series["Andresito"].cuenca == "Iguazú"
+    assert series["Puerto Ruiz"].cuenca == "Gualeguay"
+    assert series["Gualeguaychú"].cuenca == series["Boca Gualeguaychú"].cuenca == "Gualeguaychú"
+    assert series["Buenos Aires"].cuenca == "Río de la Plata"
+    assert series["Santa Fe"].cuenca == series["Tigre"].cuenca == "Paraná"
+    assert "Pepirí Miní" not in series, "sin niveles de alerta no hay con qué comparar"
+    nombres = list(series)
+    assert nombres.index("Santo Tomé") < nombres.index("Concordia") < nombres.index("Colón"), "de norte a sur"
+
+
+def test_tigre_y_el_delta_cuentan_como_delta_tambien_via_ina(fixture_text):
+    from alertas.publicar import resumen
+    series = {s.puerto: s for s in prefectura.parse_series_ina(fixture_text("ina_series_alturas_prefe.json"))}
+    for puerto in ("Tigre", "San Fernando", "Chaná Miní", "Canal Nuevo", "Baradero"):
+        assert series[puerto].rio in resumen.RIOS_DELTA, puerto
+
+
+def test_puerto_ina_lleva_la_cuenca(fixture_text):
+    serie = next(s for s in prefectura.parse_series_ina(fixture_text("ina_series_alturas_prefe.json"))
+                 if s.puerto == "Concordia")
+    p = prefectura.puerto_ina(serie, [(AHORA, 9.0)], AHORA)
+    assert p.cuenca == "Uruguay"
 
 
 def test_puerto_ina_desde_observaciones_reales(fixture_text):
@@ -135,7 +166,7 @@ def test_puerto_ina_desde_observaciones_reales(fixture_text):
 
 
 def test_puerto_ina_sin_observaciones_o_con_basura():
-    serie = prefectura.SerieIna(1, "X", "PARANAINF", -31.0, -60.0, 5.0, 5.5)
+    serie = prefectura.SerieIna(1, "X", "PARANAINF", -31.0, -60.0, 5.0, 5.5, "Paraná")
     assert prefectura.puerto_ina(serie, [], AHORA) is None
     basura = '[{"timestart": "no-es-fecha", "valor": 1}, {"timestart": "2026-11-16T03:00:00Z", "valor": null},' \
              ' {"timestart": "2026-11-16T03:00:00Z", "valor": 999}]'

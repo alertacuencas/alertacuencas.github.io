@@ -10,9 +10,10 @@ GRAVEDAD = {"evacuacion": 0, "alerta": 1, "normal": 2}
 SMN_GRAVEDAD = {"rojo": 0, "naranja": 1, "amarillo": 2, "verde": 3}
 SMN_TXT = {"rojo": "alerta roja", "naranja": "alerta naranja", "amarillo": "alerta amarilla", "verde": "sin alertas"}
 NIVEL_TXT = {"evacuacion": "evacuación", "alerta": "alerta", "normal": "normal"}
-RIOS_DELTA = {"PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA", "IBICUY"}
+RIOS_DELTA = {"PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY", "DELTA PARANA", "IBICUY",
+              "BARADERO", "CANALGAFOTRE", "CHANA", "LUJAN"}  # los últimos, códigos del INA
 MAX_AFECTADOS = 6
-CUENCA_DEFECTO = "Paraná"  # el respaldo del INA solo trae el Paraná y no marca la cuenca
+CUENCA_DEFECTO = "Paraná"  # datos viejos sin cuenca: eran todos del Paraná
 
 
 @dataclass(frozen=True)

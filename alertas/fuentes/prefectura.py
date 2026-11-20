@@ -39,8 +39,18 @@ ALTURA_MAX_M = 30.0  # escalas del Paraná medio llegan a ~10 m; más que esto e
 DATO_VIEJO = timedelta(hours=48)
 INA_SERIES = "https://alerta.ina.gob.ar/a5/obs/puntual/series?var_id=2&tabla_id=alturas_prefe&format=json"
 INA_OBS = "https://alerta.ina.gob.ar/a5/obs/puntual/series/{id}/observaciones?timestart={desde}&timeend={hasta}&format=json"
-# Códigos de río del INA para el Paraná y sus brazos del Delta.
-RIOS_INA = frozenset({"PARANAMED", "PARANAINF", "SANJAVIER", "PARANADELASPALMAS", "PARANAGUAZU", "PARANAIBICUY"})
+# Código de río del INA → cuenca, igual que en la tabla de Prefectura (CUENCAS).
+CUENCAS_INA = {
+    "PARANAMED": "Paraná", "PARANAINF": "Paraná", "SANJAVIER": "Paraná", "BARRANQUERAS": "Paraná",
+    "VICTORIA": "Paraná", "PARANADELASPALMAS": "Paraná", "PARANAGUAZU": "Paraná", "PARANAIBICUY": "Paraná",
+    "BARADERO": "Paraná", "CANALGAFOTRE": "Paraná", "CHANA": "Paraná", "LUJAN": "Paraná",
+    "URUGUAY": "Uruguay", "LATINTA": "Uruguay", "PARAGUAY": "Paraguay", "IGUAZU": "Iguazú",
+    "GUALEGUAY": "Gualeguay", "RIODELAPLATA": "Río de la Plata",
+}
+RIOS_INA = frozenset(CUENCAS_INA)
+# Donde el INA y Prefectura no coinciden, manda Prefectura (nombre del puerto y cuenca).
+NOMBRES_INA = {"Puerto Pilcomayo": "Pilcomayo", "Puerto Formosa": "Formosa", "Villa Paranacito": "Paranacito"}
+CUENCA_POR_PUERTO_INA = {"Gualeguaychú": "Gualeguaychú", "Boca Gualeguaychú": "Gualeguaychú"}
 INA_DIAS_ATRAS = 3
 # Ubicación de cada escala (lat, lon), tomada del catálogo de estaciones del INA (red
 # "alturas_prefe"). La tabla de Prefectura no trae coordenadas.
@@ -299,10 +309,11 @@ class SerieIna:
     lon: float
     alerta: float
     evacuacion: float
+    cuenca: str
 
 
 def parse_series_ina(texto: str) -> list[SerieIna]:
-    """Una serie por puerto del Paraná con umbrales y datos; de norte a sur."""
+    """Una serie por puerto con umbrales y datos; cada río de norte a sur."""
     filas = json.loads(texto)
     filas = filas.get("rows", []) if isinstance(filas, dict) else filas
     vistas: dict[str, SerieIna] = {}
@@ -316,8 +327,10 @@ def parse_series_ina(texto: str) -> list[SerieIna]:
         if e.get("rio") not in RIOS_INA or not e.get("public", True) or not (f.get("date_range") or {}).get("timeend"):
             continue
         nombre = " ".join(str(e.get("nombre", "")).split())
+        nombre = NOMBRES_INA.get(nombre, nombre)
         if nombre and nombre not in vistas:  # el INA repite puertos en series auxiliares sin datos
-            vistas[nombre] = SerieIna(int(f["id"]), nombre, e["rio"], lat, lon, alerta, evac)
+            cuenca = CUENCA_POR_PUERTO_INA.get(nombre, CUENCAS_INA[e["rio"]])
+            vistas[nombre] = SerieIna(int(f["id"]), nombre, e["rio"], lat, lon, alerta, evac, cuenca)
     return sorted(vistas.values(), key=_orden)
 
 
@@ -353,6 +366,7 @@ def puerto_ina(serie: SerieIna, obs: list[tuple[datetime, float]], ahora: dateti
         puerto=serie.puerto, rio=serie.rio, altura=altura, variacion=variacion, ts=iso_utc(ts),
         alerta=serie.alerta, evacuacion=serie.evacuacion, nivel=_nivel(altura, serie.alerta, serie.evacuacion),
         tendencia=_tendencia(variacion), viejo=ahora - ts > DATO_VIEJO, lat=serie.lat, lon=serie.lon,
+        cuenca=serie.cuenca,
     )
 
 
@@ -367,7 +381,7 @@ def obtener_ina(ahora: datetime) -> list[Puerto]:
         if (p := puerto_ina(serie, obs, ahora)) is not None:
             puertos.append(p)
     if not puertos:
-        raise RuntimeError("el INA no devolvió alturas del Paraná")
+        raise RuntimeError("el INA no devolvió alturas de los ríos")
     return puertos
 
 
