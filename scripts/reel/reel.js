@@ -89,7 +89,13 @@
   const alMapa = (ms) => desplazar(y("#mapa", 150), ms);
   const cerrarCarteles = () => mapa.eachLayer((l) => l.closeTooltip?.());
 
-  const costa = () => { const c = $("#carteles"); return c?.children[c.children.length - 2]; };
+  // El bloque "costa" a veces habla de la marea y a veces del aviso del SMN: se resalta el cartel que nombra la voz.
+  const costa = () => {
+    const c = [...($("#carteles")?.children || [])];
+    const txt = (SUBS.find(([a]) => a === T.costa) || [])[2] || "";
+    const lluvia = /Meteorol/i.test(txt) && c.find((e) => /Lluvia y tormentas/i.test(e.textContent));
+    return lluvia || c[c.length - 2];
+  };
   const CLASICA = [
     [0.0, () => scrollTo(0, 0)],
     [1.2, () => desplazar(y("#carteles", 150), 1800)],
