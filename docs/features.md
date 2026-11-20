@@ -24,6 +24,7 @@ sección 0 de [`diseno-fase1.md`](diseno-fase1.md), que manda si algo se contrad
 | Publicaciones para Instagram en modo prueba | `/publicaciones.html` | `5ae3465` |
 | Contacto por mensaje directo de Instagram | web | `cd90cb2` |
 | Todos los ríos en la web en vivo (Uruguay, Paraguay, Iguazú, Gualeguay, Río de la Plata), también con el respaldo del INA | web, paso 3 | 20/11/2026 |
+| Pronóstico del INA en la ficha de 13 puertos (Paraná, Uruguay y Paraguay) | web, paso 2 | 20/11/2026 |
 | Reel diario: guion, portada, grabación y montaje automáticos (la voz es manual) | [`reels/`](../reels/README.md), `alertas/reel/` | 16/11/2026, automatizado el 17/11 |
 
 ## Pendientes e ideas
@@ -37,7 +38,6 @@ Una fila por función. El estado puede ser idea, diseño, en curso o hecha.
 | Lluvia medida en tiempo real en CABA | Tablero | idea | Falta una fuente |
 | Monitor cada 10 minutos de verdad | Que la web no muestre datos viejos | idea | GitHub corre el cron cuando quiere (el 17/11: 2 corridas en 16 h). Opción: disparar el workflow desde un cron externo gratuito |
 | Publicar el reel por la API de Instagram | Que el reel salga con un clic de aprobación | idea | Falta `IG_ACCESS_TOKEN` (app de Meta + usuario del sistema). El video ya queda en una URL pública (release) |
-| Pronóstico del Paraná por puerto | Saber si va a subir en Rosario, Santa Fe, etc. en los próximos días | idea | Hoy solo hay pronóstico (INA, 48 h) para San Fernando; los puertos del Paraná muestran solo lo medido. El INA publica pronósticos para el Paraná con horizonte de días a semanas |
 | Voz del reel por API | Reel 100 % automático | descartada por ahora | El plan gratis de ElevenLabs no permite voces de la biblioteca por API |
 
 ## Ficha para una función nueva

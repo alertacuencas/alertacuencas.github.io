@@ -53,4 +53,9 @@ reescribe, y la web sigue mostrando el último publicado (cada puerto trae su ho
 |---|---|
 | `version`, `generado`, `fuente`, `url` | Metadatos |
 | `evacuacion`, `alerta` | Nombres de los puertos con lectura reciente (menos de 36 h) en cada nivel, de norte a sur |
-| `puertos[]` | `puerto`, `rio`, `altura`, `variacion`, `ts` (UTC), `alerta`, `evacuacion`, `nivel` (`evacuacion` · `alerta` · `normal`), `tendencia` (`sube` · `baja` · `estable` · `sin_dato`), `viejo`, `lat`, `lon` (null si falta la ubicación), `cuenca` (`Paraná` · `Uruguay` · `Paraguay` · `Río de la Plata` · `Iguazú` · `Gualeguay` · `Gualeguaychú`; el Delta cuenta como Paraná; falta en el respaldo del INA, que es solo Paraná) |
+| `puertos[]` | `puerto`, `rio`, `altura`, `variacion`, `ts` (UTC), `alerta`, `evacuacion`, `nivel` (`evacuacion` · `alerta` · `normal`), `tendencia` (`sube` · `baja` · `estable` · `sin_dato`), `viejo`, `lat`, `lon` (null si falta la ubicación), `cuenca` (`Paraná` · `Uruguay` · `Paraguay` · `Río de la Plata` · `Iguazú` · `Gualeguay` · `Gualeguaychú`; el Delta cuenta como Paraná; los datos de antes del 20/11 vía INA no la traen y son del Paraná), `pronostico` (opcional, ver abajo) |
+| `pronostico` | Opcional: `fuente` y `url` del pronóstico del INA, si hay al menos un puerto con pronóstico |
+
+**`puertos[].pronostico`** (opcional, solo en los ~13 puertos que pronostica el INA, de `alertas/fuentes/pronostico_rios.py`):
+lista de días que vienen, `{fecha (AAAA-MM-DD, hora argentina), medio, inferior, superior}` en metros. El Paraná viene por
+semana (2 puntos); el Uruguay y el Paraguay, día por día. Si la corrida del INA es vieja o el archivo trae basura, el puerto no lo lleva.

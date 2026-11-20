@@ -80,6 +80,35 @@ function fraseTendencia(p) {
   if (p.tendencia === "estable") return "Desde la lectura anterior se mantiene igual.";
   return `Desde la lectura anterior ${p.variacion > 0 ? "subió" : "bajó"} ${distancia(p.variacion)}.`;
 }
+// ── Pronóstico del INA (solo algunos puertos) ──
+const dia = (fecha) => fmtDia.format(new Date(`${fecha}T12:00:00-03:00`)).replace(",", "");
+const nivelDe = (p, v) => (v >= p.evacuacion ? "evacuacion" : v >= p.alerta ? "alerta" : "normal");
+const EN_NIVEL = { evacuacion: "en evacuación", alerta: "en alerta", normal: "por debajo del alerta" };
+function quedaria(p, v) {
+  const n = nivelDe(p, v);
+  if (n === p.nivel) return `seguiría ${EN_NIVEL[n]}`;
+  if (GRAVEDAD[n] < GRAVEDAD[p.nivel]) return `entraría ${EN_NIVEL[n]}`;
+  return n === "normal" ? "volvería a estar por debajo del alerta" : "saldría de la evacuación y seguiría en alerta";
+}
+function cambio(d) {
+  if (Math.abs(d) < 0.03) return "estaría más o menos igual que hoy";
+  return `${d > 0 ? "subiría" : "bajaría"} ${distancia(d)}`;
+}
+function frasePronostico(p) {
+  const ps = p.pronostico;
+  if (!ps?.length || p.viejo) return "";
+  const pico = ps.reduce((a, b) => (b.medio > a.medio ? b : a));
+  const fin = ps.at(-1);
+  const rango = `entre ${m(fin.inferior)} y ${m(fin.superior)}`;
+  if (pico !== fin && pico.medio > p.altura + 0.05 && pico.medio > fin.medio + 0.1) {
+    const otroNivel = nivelDe(p, fin.medio) !== nivelDe(p, pico.medio);
+    return `El INA espera que suba hasta ${m(pico.medio)} el ${dia(pico.fecha)}: ${quedaria(p, pico.medio)}. `
+      + `Para el ${dia(fin.fecha)} espera ${m(fin.medio)} (${rango})${otroNivel ? `: ${quedaria(p, fin.medio)}` : ""}.`;
+  }
+  return `El INA pronostica que para el ${dia(fin.fecha)} ${cambio(fin.medio - p.altura)}: `
+    + `${m(fin.medio)} (${rango}). Así ${quedaria(p, fin.medio)}.`;
+}
+
 const flecha = (p) => ({ sube: " · ▲ sube", baja: " · ▼ baja", estable: " · estable" }[p.tendencia] ?? "");
 
 // ── La escala: vara hidrométrica con el agua hasta la altura de hoy ──
@@ -290,7 +319,9 @@ function fichaPuerto(ficha, p) {
       el("p", { className: "ficha-estado", textContent: p.viejo ? "Sin lectura reciente" : NIVEL_TXT[p.nivel] }),
       el("p", { textContent: `El río está en ${m(p.altura)}. ${fraseNivel(p)}` }),
       el("p", { textContent: fraseTendencia(p) }),
+      frasePronostico(p) ? el("p", { className: "ficha-prono", textContent: frasePronostico(p) }) : null,
       el("p", { className: "ficha-pie", textContent: `Lectura de la escala de Prefectura del ${cuando(p.ts)}.`
+        + (p.pronostico?.length && !p.viejo ? " El pronóstico es del INA y puede cambiar." : "")
         + (p.nivel === "evacuacion" ? " Si vivís cerca del río, seguí las indicaciones de Defensa Civil de tu municipio." : "") })));
   seleccionarParada(p.puerto, { volar: true });
 }

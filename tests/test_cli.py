@@ -5,7 +5,7 @@ from shapely.geometry import box, mapping
 
 from alertas import cli
 from alertas.db import Base
-from alertas.fuentes import ina, metar, prefectura, shn, smn_cap, snih
+from alertas.fuentes import ina, metar, prefectura, pronostico_rios, shn, smn_cap, snih
 
 
 def _zonas_fc():
@@ -29,6 +29,8 @@ def test_poll_junta_fuentes_y_aisla_errores(tmp_path, fixture_text, monkeypatch)
     monkeypatch.setattr(smn_cap, "obtener_cap", lambda link: fixture_text("cap_amba_sintetico.xml"))
     monkeypatch.setattr(prefectura, "obtener",
                         lambda a: prefectura.parse(fixture_text("pna_alturas_16nov.html"), a))
+    prono_sf = [{"fecha": "2026-11-24", "medio": 5.84, "inferior": 5.5, "superior": 6.1}]
+    monkeypatch.setattr(pronostico_rios, "obtener", lambda a: {("Santa Fe", "Paraná"): prono_sf})
 
     zonas_path = tmp_path / "zonas.geojson"
     zonas_path.write_text(json.dumps(_zonas_fc()))
@@ -53,6 +55,8 @@ def test_poll_junta_fuentes_y_aisla_errores(tmp_path, fixture_text, monkeypatch)
     assert estado["fuentes"]["prefectura"]["ok"] is True
     assert parana["puertos"], "parana.json debe traer los puertos del Paraná"
     assert parana["via"] == "prefectura" and estado["fuentes"]["prefectura"]["via"] == "prefectura"
+    santa_fe = next(p for p in parana["puertos"] if p["puerto"] == "Santa Fe")
+    assert santa_fe["pronostico"] == prono_sf and estado["fuentes"]["pronostico_rios"]["ok"] is True
     # el CAP ya visto no se vuelve a descargar
     assert db.links_cap_nuevos(["https://ssl.smn.gob.ar/feeds/CAP/x.xml"]) == []
 

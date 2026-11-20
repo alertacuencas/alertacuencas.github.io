@@ -17,7 +17,7 @@ from pathlib import Path
 from alertas.db import Base
 from alertas.estado import armar_estado
 from alertas import publicar
-from alertas.fuentes import ina, prefectura, registro, smn_cap
+from alertas.fuentes import ina, prefectura, pronostico_rios, registro, smn_cap
 from alertas.modelos import Lectura
 from alertas.serie import HORAS_ATRAS, armar_serie
 from alertas.tiempo import ahora_utc
@@ -107,6 +107,9 @@ def poll(db: Base, zonas_path: Path, salida: Path, ahora: datetime,
     if parana is not None:  # si no responde ninguna fuente queda el último parana.json publicado
         puertos, via = parana
         resumen_parana = prefectura.resumen(puertos, ahora, via)
+        pronos = _consultar("pronostico_rios", fuentes, lambda: pronostico_rios.obtener(ahora))
+        if pronos:
+            resumen_parana = pronostico_rios.agregar(resumen_parana, pronos)
         _escribir_json(salida.with_name("parana.json"), resumen_parana, indent=1)
     # Publicación para redes (modo prueba): si falla, no frena la web.
     estado_smn = estado if fuentes.get("smn_cap", {}).get("ok") else None
