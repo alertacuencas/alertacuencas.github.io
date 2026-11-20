@@ -40,3 +40,6 @@ Julieta - Argentine Warm & Friendly · Eleven v4 · estabilidad 50 % · similitu
 > El Paraná está en evacuación en 8 ciudades. Hay alerta amarilla por tormentas en el AMBA.
 
 ## Notas
+- Guion rehecho a las 12:10 con datos del momento (a pedido): Hernandarias bajó a 34 cm y el Paraguay salió de alerta.
+- Publicado el 20/11 a las 12:40: https://www.instagram.com/reel/Df9_cw0ugC6/ (recorrido "clasica").
+- El primer armado falló (la web tardó ~50 s en cargar en el runner); el segundo salió bien. Se rearmó una vez más para resaltar el cartel de tormentas cuando la voz habla del SMN.
